@@ -921,6 +921,9 @@
         function resetCameraToCurrentView() {
             activeCamera = cameras[currentView];
             
+            // ダンピング（余韻・慣性運動）を一時的にオフにして余韻の勢いをクリア
+            controls.enableDamping = false;
+            
             // カメラを移動させる前に回転の制約を一度リセットする
             controls.minAzimuthAngle = -Infinity;
             controls.maxAzimuthAngle = Infinity;
@@ -951,6 +954,9 @@
             
             controls.object = activeCamera;
             controls.update();
+            
+            // ダンピングを再有効化
+            controls.enableDamping = true;
             
             // 新しい視点位置を基準に、上下の回転を±15度、左右の回転角度を±45度に制限
             const polar = controls.getPolarAngle();
