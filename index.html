@@ -1271,22 +1271,50 @@
         };
 
         // PC用のダブルクリックによる視点リセット
-        renderer.domElement.addEventListener('dblclick', () => {
-            resetCameraToCurrentView();
+        // ... existing code ... (この行の上の処理までを残し、以下のイベントリスナーを置き換えます)
+        window.onload = () => {
+            // 右投げボタンの初期化
+            const rightBtn = document.querySelector('.arm-btn[data-arm="right"]');
+            if (rightBtn) rightBtn.classList.add('bg-blue-600', 'text-white');
+            
+            updateBSODisplay();
+            updateSpeedSlider(currentPitch);
+            animate();
+        };
+
+        const DOUBLE_CLICK_TIME = 200; // ダブルクリックと判定する間隔（ミリ秒）。数値を小さくして厳しくしました。
+        let lastClickTime = 0;
+
+        // PC用：独自の間隔設定でダブルクリックを判定
+        renderer.domElement.addEventListener('click', () => {
+            const now = Date.now();
+            if (now - lastClickTime <= DOUBLE_CLICK_TIME) {
+                resetCameraToCurrentView();
+                lastClickTime = 0; // 連続発火を防止
+            } else {
+                lastClickTime = now;
+            }
         });
 
-        // ダブルタップによる画面拡大（ズーム）動作を防止し、視点をリセット
+        // スマホ用：ズーム動作防止と、短い間隔での視点リセット
         let lastTouchEnd = 0;
         document.addEventListener('touchend', (e) => {
             const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
+            
+            // ズーム防止処理 (ブラウザのズーム動作検知は余裕を持たせて350ms以内の連続タップを防止)
+            if (now - lastTouchEnd <= 350) {
                 e.preventDefault();
-                // 画面（キャンバス）をダブルタップした場合は視点をリセット
+            }
+            
+            // 視点リセット処理（クリックと同じく200ms以内の厳しい判定）
+            if (now - lastTouchEnd <= DOUBLE_CLICK_TIME) {
                 if (e.target.tagName === 'CANVAS') {
                     resetCameraToCurrentView();
                 }
             }
+            
             lastTouchEnd = now;
+            lastClickTime = now; // PC用のクリック時間と同期して重複発火を防止
         }, { passive: false });
 
     </script>
