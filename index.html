@@ -2,12 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>本格ピッチングシミュレータ</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for camera manipulation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -384,12 +386,36 @@
         cameras.pitcher.lookAt(0, 0.8, 0);
         cameras.catcher.position.set(0, 1.2, -2.5);
         cameras.catcher.lookAt(0, 1.2, 18.44);
-        cameras.batterRight.position.set(0.55, 1.6, -0.2);
-        cameras.batterRight.lookAt(0, 1.4, 18.44);
-        cameras.batterLeft.position.set(-0.55, 1.6, -0.2);
-        cameras.batterLeft.lookAt(0, 1.4, 18.44);
+        
+        // 視点の角度と位置の調整（下を向きすぎてベースに近く見えないようマウンド方向を注視）
+        cameras.batterRight.position.set(0.6, 1.6, -0.6);
+        cameras.batterRight.lookAt(-0.15, 1.5, 18.44);
+        
+        cameras.batterLeft.position.set(-0.6, 1.6, -0.6);
+        cameras.batterLeft.lookAt(0.15, 1.5, 18.44);
 
         let activeCamera = cameras.pitcher;
+
+        // OrbitControls (視点操作)
+        const controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableZoom = false; // ズーム無効
+        controls.enablePan = false;  // パン（平行移動）無効
+        
+        // 初期カメラの向きを取得し、カメラのすぐ目の前をターゲットにする（一人称視点の再現）
+        const initDir = new THREE.Vector3();
+        activeCamera.getWorldDirection(initDir);
+        controls.target.copy(activeCamera.position).add(initDir.multiplyScalar(0.1));
+        controls.update();
+
+        // 最初の視点の制約（上下は少しだけ、左右の首振りのみ）
+        const initialPolar = controls.getPolarAngle();
+        controls.minPolarAngle = initialPolar - Math.PI / 12; // 上に15度まで
+        controls.maxPolarAngle = initialPolar + Math.PI / 12; // 下に15度まで
+        const initialAzimuth = controls.getAzimuthalAngle();
+        controls.minAzimuthAngle = initialAzimuth - Math.PI / 4; // 左右45度まで
+        controls.maxAzimuthAngle = initialAzimuth + Math.PI / 4;
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
@@ -775,6 +801,9 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            
+            // カメラコントロールの更新
+            controls.update();
 
             if (isSwingingAnim) {
                 swingAnimProgress += 0.12;
@@ -898,17 +927,48 @@
                 currentView = view;
                 activeCamera = cameras[view];
                 
+                // カメラを移動させる前に回転の制約を一度リセットする
+                controls.minAzimuthAngle = -Infinity;
+                controls.maxAzimuthAngle = Infinity;
+                controls.minPolarAngle = 0;
+                controls.maxPolarAngle = Math.PI;
+
                 if (view === 'pitcher') {
                     activeCamera.position.set(0, 1.8, 20.0);
+                    activeCamera.lookAt(0, 0.8, 0);
                 } else if (view === 'tv') {
                     activeCamera.position.set(0, 4.0, 35.0);
+                    activeCamera.lookAt(0, 1.0, 0);
+                } else if (view === 'catcher') {
+                    activeCamera.position.set(0, 1.2, -2.5);
+                    activeCamera.lookAt(0, 1.2, 18.44);
                 } else if (view === 'batterRight') {
                     batterSide = 'right';
                     updateBatterStance();
+                    activeCamera.position.set(0.6, 1.6, -0.6);
+                    activeCamera.lookAt(-0.15, 1.5, 18.44);
                 } else if (view === 'batterLeft') {
                     batterSide = 'left';
                     updateBatterStance();
+                    activeCamera.position.set(-0.6, 1.6, -0.6);
+                    activeCamera.lookAt(0.15, 1.5, 18.44);
                 }
+                
+                // 一人称視点のように見回すため、ターゲットをカメラのすぐ目の前に設定
+                const dir = new THREE.Vector3();
+                activeCamera.getWorldDirection(dir);
+                controls.target.copy(activeCamera.position).add(dir.multiplyScalar(0.1));
+                
+                controls.object = activeCamera;
+                controls.update();
+                
+                // 新しい視点位置を基準に、上下の回転を±15度、左右の回転角度を±45度に制限
+                const polar = controls.getPolarAngle();
+                controls.minPolarAngle = polar - Math.PI / 12;
+                controls.maxPolarAngle = polar + Math.PI / 12;
+                const azimuth = controls.getAzimuthalAngle();
+                controls.minAzimuthAngle = azimuth - Math.PI / 4;
+                controls.maxAzimuthAngle = azimuth + Math.PI / 4;
                 
                 const grid = document.getElementById('zone-grid');
                 if (view === 'pitcher' || view === 'tv') {
