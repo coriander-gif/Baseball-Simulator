@@ -43,7 +43,6 @@
             background: rgba(59, 130, 246, 0.3);
         }
         
-        /* 共通のアクティブボタンのスタイル */
         .cam-btn.active, .diff-btn.active, .arm-btn.active, .bat-btn.active {
             background-color: #3b82f6;
             color: white;
@@ -114,11 +113,8 @@
                     <!-- Base Runners Diamond -->
                     <div class="flex flex-col items-center">
                         <div class="relative w-11 h-11">
-                            <!-- 2nd Base -->
                             <div id="runner-2b" class="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border border-gray-600 bg-gray-900 transition-colors"></div>
-                            <!-- 1st Base -->
                             <div id="runner-1b" class="absolute top-1/2 right-0 -translate-y-1/2 w-3 h-3 rotate-45 border border-gray-600 bg-gray-900 transition-colors"></div>
-                            <!-- 3rd Base -->
                             <div id="runner-3b" class="absolute top-1/2 left-0 -translate-y-1/2 w-3 h-3 rotate-45 border border-gray-600 bg-gray-900 transition-colors"></div>
                         </div>
                         <span class="text-[10px] text-gray-400 mt-0.5 font-bold">RUNNERS</span>
@@ -152,7 +148,7 @@
                 </div>
             </div>
 
-            <!-- Umpire Stats Panel (審判モード用) -->
+            <!-- Umpire Stats Panel -->
             <div class="ui-panel rounded-xl p-3 w-44 text-center hidden" id="umpire-stats-panel">
                 <div class="text-xs font-bold text-purple-400 mb-1 border-b border-gray-700 pb-1">UMPIRE SCORE</div>
                 <div class="text-xs text-gray-300 mt-1">球数: <span id="ump-ball-count" class="font-bold text-white">0 / 10</span></div>
@@ -270,10 +266,25 @@
     </div>
 
     <script>
-        const GRAVITY = -9.8;
-        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44);
-        let TARGET_POINT = new THREE.Vector3(0, 0.8, 0);
-        
+        const GRAVITY = -9.8; // 重力加速度 (m/s^2)
+        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリリースポイント (x, y, z)
+        let TARGET_POINT = new THREE.Vector3(0.0, 0.8, 0.0);  // 目標通過点 (ホームプレート)
+
+        /**
+         * Pitch Trajectory Logic の定義を反映
+         * ax: 横方向 Magnus 加速度 (m/s^2) [正: シュート方向 / 負: スライダー方向]
+         * ay: 縦方向 Magnus 加速度 (m/s^2) [正: ライジング(重力抗力) / 負: 落下]
+         */
+        const PITCH_TYPES = {
+            straight: { name: 'ストレート', minSpeed: 140, maxSpeed: 165, defaultSpeed: 150, color: 0xff4444, ax: 0.5,  ay: 6.0 },
+            curve:    { name: 'カーブ',     minSpeed: 90,  maxSpeed: 130, defaultSpeed: 115, color: 0x4444ff, ax: -3.5, ay: -5.0 },
+            slider:   { name: 'スライダー', minSpeed: 125, maxSpeed: 145, defaultSpeed: 135, color: 0xffff44, ax: -5.5, ay: 1.0 },
+            cutter:   { name: 'カットボール', minSpeed: 135, maxSpeed: 155, defaultSpeed: 142, color: 0xff8844, ax: -2.0, ay: 4.0 },
+            shuuto:   { name: 'シュート',   minSpeed: 135, maxSpeed: 155, defaultSpeed: 145, color: 0x44ff44, ax: 4.0,  ay: 3.0 },
+            fork:     { name: 'フォーク',   minSpeed: 130, maxSpeed: 150, defaultSpeed: 130, color: 0x44ffff, ax: 0.0,  ay: -2.0 },
+            changeup: { name: 'チェンジアップ', minSpeed: 110, maxSpeed: 140, defaultSpeed: 125, color: 0xff44ff, ax: 3.0,  ay: 0.0 }
+        };
+
         let currentPitch = 'straight';
         let currentMode = 'pitcher'; // 'pitcher', 'catcher', 'batter', 'umpire'
         let pitcherArm = 'right'; // 'right', 'left'
@@ -308,16 +319,6 @@
             vel: new THREE.Vector3(),
             acc: new THREE.Vector3(),
             active: false
-        };
-
-        const PITCH_TYPES = {
-            straight: { name: 'ストレート', minSpeed: 140, maxSpeed: 165, defaultSpeed: 150, color: 0xff4444, ax: 0, ay: 0 },
-            curve:    { name: 'カーブ',     minSpeed: 110, maxSpeed: 135, defaultSpeed: 120, color: 0x4444ff, ax: -1.2, ay: -3.5 },
-            slider:   { name: 'スライダー', minSpeed: 125, maxSpeed: 148, defaultSpeed: 135, color: 0xffff44, ax: -3.2, ay: -0.8 },
-            cutter:   { name: 'カット',     minSpeed: 132, maxSpeed: 154, defaultSpeed: 142, color: 0xff8844, ax: -1.5, ay: -0.3 },
-            shuuto:   { name: 'シュート',   minSpeed: 130, maxSpeed: 152, defaultSpeed: 140, color: 0x44ff44, ax: 2.8, ay: -0.2 },
-            fork:     { name: 'フォーク',   minSpeed: 122, maxSpeed: 145, defaultSpeed: 132, color: 0x44ffff, ax: 0, ay: -5.5 },
-            changeup: { name: 'チェンジ',   minSpeed: 118, maxSpeed: 140, defaultSpeed: 128, color: 0xff44ff, ax: 0.8, ay: -2.8 }
         };
 
         let countB = 0;
@@ -517,7 +518,6 @@
 
         let activeCamera = cameras.pitcher;
 
-        // OrbitControls
         const controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
@@ -546,7 +546,6 @@
         dirLight2.position.set(-20, 30, -20);
         scene.add(dirLight2);
 
-        // Field & Dirt
         const fieldGeo = new THREE.PlaneGeometry(100, 100);
         const fieldMat = new THREE.MeshLambertMaterial({ color: 0x3b823e });
         const field = new THREE.Mesh(fieldGeo, fieldMat);
@@ -591,7 +590,6 @@
         plate.position.set(0, 0.05, -0.215);
         scene.add(plate);
 
-        // Batter's Box
         const boxGeo = new THREE.BoxGeometry(1.0, 0.02, 1.8);
         const boxEdges = new THREE.EdgesGeometry(boxGeo);
         const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
@@ -639,7 +637,6 @@
         cpuGuessMarker.renderOrder = 999;
         scene.add(cpuGuessMarker);
 
-        // Bat
         const batGroup = new THREE.Group();
         const batGeo = new THREE.CylinderGeometry(0.032, 0.016, 0.85, 16);
         const batMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.4 });
@@ -675,7 +672,6 @@
         arrivalMarker.visible = false;
         scene.add(arrivalMarker);
 
-        // Baseball
         const ballRadius = 0.037;
         const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
         const ballMesh = new THREE.Mesh(ballGeo, whiteMat);
@@ -708,8 +704,12 @@
             }
         }
 
-        function calculateInitialVelocity(pitchSpeed, ax, ay) {
-            const vz = - (pitchSpeed * 1000 / 3600);
+        /**
+         * Pitch Trajectory Logic の初期速度計算関数
+         * 等加速度運動公式より逆算して TARGET_POINT に正確に届く初期速度ベクトルを計算
+         */
+        function calculateInitialVelocity(pitchSpeedKmH, ax, ay) {
+            const vz = - (pitchSpeedKmH * 1000 / 3600);
             const dz = TARGET_POINT.z - RELEASE_POINT.z;
             const t = dz / vz;
             
@@ -718,6 +718,21 @@
             const vy = (TARGET_POINT.y - RELEASE_POINT.y - 0.5 * ay_total * t * t) / t;
             
             return new THREE.Vector3(vx, vy, vz);
+        }
+
+        /**
+         * ホームプレート通過時のストライクゾーン判定 (Pitch Trajectory Logic より統合)
+         */
+        function checkStrike(arrivalPos, ballRadius = 0.037) {
+            const minX = -0.215 - ballRadius;
+            const maxX = 0.215 + ballRadius;
+            const minY = 0.50 - ballRadius;
+            const maxY = 1.10 + ballRadius;
+
+            return (
+                arrivalPos.x >= minX && arrivalPos.x <= maxX &&
+                arrivalPos.y >= minY && arrivalPos.y <= maxY
+            );
         }
 
         const clock = new THREE.Clock();
@@ -731,6 +746,7 @@
             const breakSliderValue = (currentMode === 'catcher') ? 5 : parseInt(document.getElementById('break-slider').value, 10);
             const breakMultiplier = breakSliderValue / 5.0; 
             
+            // 左投手のハンデ・軸反転の適用
             const sideFactor = (pitcherArm === 'left') ? -1 : 1;
             const modifiedAx = pType.ax * breakMultiplier * sideFactor;
             const modifiedAy = pType.ay * breakMultiplier;
@@ -754,7 +770,6 @@
             cpuGuessMarker.visible = false;
             ballMesh.visible = true;
 
-            // 2DグリッドのCPU予測ハイライト解除
             Array.from(document.getElementById('zone-grid').children).forEach(child => {
                 child.classList.remove('ring-4', 'ring-purple-500', 'bg-purple-600/60', 'z-20');
             });
@@ -1118,13 +1133,10 @@
                 ballData.vel.addScaledVector(ballData.acc, dt);
                 ballData.pos.addScaledVector(ballData.vel, dt);
                 
+                // ホームプレート(z=0)を通過した瞬間のストライク判定
                 if (prevZ > 0 && ballData.pos.z <= 0) {
                     arrivalPos.copy(ballData.pos);
-                    const r = 0.037;
-                    isActualStrike = (
-                        arrivalPos.x >= (-0.215 - r) && arrivalPos.x <= (0.215 + r) &&
-                        arrivalPos.y >= (0.50 - r) && arrivalPos.y <= (1.10 + r)
-                    );
+                    isActualStrike = checkStrike(arrivalPos, 0.037);
                 }
 
                 ballMesh.position.copy(ballData.pos);
@@ -1162,7 +1174,7 @@
                         }, 2000);
 
                     } else if (currentMode === 'umpire') {
-                        // 審判の判定入力を待機
+                        // 審判判定を待機
                     } else {
                         strikeZone.visible = true;
                         trailInstancedMesh.visible = true;
@@ -1197,11 +1209,7 @@
                 e.target.classList.remove('text-gray-300');
                 
                 pitcherArm = e.target.dataset.arm;
-                if (pitcherArm === 'right') {
-                    RELEASE_POINT.x = 0.5;
-                } else {
-                    RELEASE_POINT.x = -0.5;
-                }
+                RELEASE_POINT.x = (pitcherArm === 'left') ? -0.5 : 0.5;
             });
         });
 
