@@ -48,20 +48,31 @@
             color: white;
             border-color: transparent;
         }
+
+        /* 判定テキスト表示アニメーション */
+        @keyframes popup-bounce {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.15); opacity: 1; }
+            70% { transform: scale(0.95); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-popup {
+            animation: popup-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
     </style>
 </head>
 <body class="text-white">
 
     <div id="canvas-container"></div>
 
-    <!-- Result Overlay for Batter, Umpire & Catcher Mode -->
-    <div id="result-overlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none hidden z-50">
-        <div id="result-text" class="text-5xl md:text-8xl font-black scale-0 transition-transform duration-300 text-center"></div>
-        <div id="result-subtext" class="text-xl md:text-3xl font-bold mt-2 text-yellow-300 drop-shadow"></div>
-    </div>
-
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-10">
         
+        <!-- 画面中央 判定テキストポップアップ -->
+        <div id="result-popup-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none hidden z-30">
+            <div id="result-popup-text" class="text-4xl sm:text-6xl font-black drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] tracking-wider"></div>
+            <div id="result-popup-subtext" class="text-lg sm:text-2xl font-bold text-yellow-300 mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"></div>
+        </div>
+
         <!-- Header / View Controls -->
         <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2">
             <div class="ui-panel rounded-xl p-4">
@@ -90,6 +101,12 @@
                         <button class="diff-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="normal">普通</button>
                         <button class="diff-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="hard">難しい</button>
                     </div>
+
+                    <!-- 判定テキスト ON/OFF スイッチ -->
+                    <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
+                        <span class="text-xs text-gray-400 font-bold px-1">判定表示:</span>
+                        <button id="result-text-toggle-btn" class="px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-blue-600 text-white font-bold">ON</button>
+                    </div>
                 </div>
 
                 <!-- 視点切替ボタン -->
@@ -106,7 +123,7 @@
             <!-- Game Status Panel (得点・イニング・ランナー・SBO) -->
             <div class="ui-panel rounded-xl p-3 w-48 hidden" id="bso-panel">
                 <div class="flex justify-between items-center text-xs font-bold border-b border-gray-700 pb-1.5 mb-2">
-                    <span id="inning-display" class="text-yellow-400">1回表</span>
+                    <span id="inning-display" class="text-yellow-400">1回裏</span>
                     <span class="text-gray-400">SCORE: <span id="score-display" class="text-white text-sm font-black">0</span></span>
                 </div>
                 <div class="flex items-center justify-between gap-2">
@@ -169,7 +186,7 @@
         <div class="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 pointer-events-auto flex flex-col items-center" id="left-target-container">
             <div class="ui-panel rounded-xl p-3 shadow-lg">
                 <div class="text-sm font-bold text-center mb-2 text-gray-200" id="grid-title">コース指定</div>
-                <div id="zone-grid" class="grid grid-cols-5 gap-0.5 w-32 h-40 bg-gray-600 p-0.5 rounded">
+                <div id="zone-grid" class="grid grid-cols-5 grid-rows-5 gap-0.5 w-32 h-40 bg-gray-600 p-0.5 rounded">
                     <!-- Cells injected via JS -->
                 </div>
             </div>
@@ -193,7 +210,7 @@
                         <button class="pitch-btn bg-gray-700 hover:bg-gray-600 rounded-lg p-2 text-xs sm:text-sm font-bold" data-pitch="changeup" style="border-bottom: 3px solid #ff44ff">チェンジ</button>
                     </div>
                     
-                    <div class="flex flex-row items-center gap-2">
+                    <div class="flex flex-row items-center gap-2" id="pitch-sliders">
                         <div class="flex flex-col items-center bg-gray-800 p-2 rounded-lg min-w-[100px]">
                             <div class="text-xs font-bold text-gray-300 mb-1">球速: <span id="speed-value-display" class="text-blue-400 text-base">150</span>km/h</div>
                             <input type="range" min="140" max="165" value="150" id="speed-slider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
@@ -270,8 +287,41 @@
         let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリリースポイント (x, y, z)
         let TARGET_POINT = new THREE.Vector3(0.0, 0.8, 0.0);  // 目標通過点 (ホームプレート)
 
+        // 判定テキスト表示フラグ・タイマー
+        let showResultTextEnabled = true;
+        let popupTimer = null;
+
+        function showResultPopup(titleText, textClass = 'text-white', subText = '') {
+            if (!showResultTextEnabled) return;
+
+            const container = document.getElementById('result-popup-container');
+            const titleEl = document.getElementById('result-popup-text');
+            const subEl = document.getElementById('result-popup-subtext');
+
+            if (!container || !titleEl) return;
+
+            if (popupTimer) clearTimeout(popupTimer);
+
+            titleEl.className = `text-4xl sm:text-6xl font-black drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] tracking-wider animate-popup ${textClass}`;
+            titleEl.innerText = titleText;
+
+            if (subText) {
+                subEl.innerText = subText;
+                subEl.classList.remove('hidden');
+            } else {
+                subEl.innerText = '';
+                subEl.classList.add('hidden');
+            }
+
+            container.classList.remove('hidden');
+
+            popupTimer = setTimeout(() => {
+                container.classList.add('hidden');
+            }, 1800);
+        }
+
         /**
-         * Pitch Trajectory Logic の定義を反映
+         * Pitch Trajectory Logic の定義
          * ax: 横方向 Magnus 加速度 (m/s^2) [正: シュート方向 / 負: スライダー方向]
          * ay: 縦方向 Magnus 加速度 (m/s^2) [正: ライジング(重力抗力) / 負: 落下]
          */
@@ -321,12 +371,15 @@
             active: false
         };
 
+        // 投球履歴を保持する配列
+        let pitchHistory = [];
+
         let countB = 0;
         let countS = 0;
         let countO = 0;
         let scoreTeam = 0;
         let currentInning = 1;
-        let isInningTop = true;
+        let isInningTop = false;
         let runners = [false, false, false]; // [1B, 2B, 3B]
 
         const xValues = [-0.286, -0.143, 0, 0.143, 0.286];
@@ -412,24 +465,94 @@
                 countB = 0;
                 countS = 0;
                 countO = 0;
-                if (isInningTop) {
-                    isInningTop = false;
-                } else {
-                    isInningTop = true;
-                    currentInning++;
-                }
+                currentInning++;
                 updateGameStatusDisplay();
+                clearPitchHistory();
             }, 1800);
+        }
+
+        // 到達座標から最も近いグリッドセルを計算
+        function getClosestGridCell(x, y) {
+            let bestR = 2, bestC = 2;
+            let minD = Infinity;
+            for(let r = 0; r < 5; r++){
+                for(let c = 0; c < 5; c++){
+                    let dx = x - xValues[c];
+                    let dy = y - yValues[r];
+                    let d = dx*dx + dy*dy;
+                    if(d < minD){
+                        minD = d;
+                        bestR = r;
+                        bestC = c;
+                    }
+                }
+            }
+            return {r: bestR, c: bestC};
+        }
+
+        // 投球履歴を追加
+        function addPitchToHistory(pitchType, r, c) {
+            pitchHistory.push({ type: pitchType, r: r, c: c });
+            updatePitchHistoryUI();
+        }
+
+        // 投球履歴のUIを更新
+        function updatePitchHistoryUI() {
+            const cells = document.getElementById('zone-grid').children;
+            Array.from(cells).forEach(cell => {
+                const markers = cell.querySelectorAll('.pitch-marker');
+                markers.forEach(m => m.remove());
+            });
+
+            // 現在の視点でグリッドが反転しているか確認
+            const isFlipped = currentView !== 'pitcher' && currentView !== 'tv';
+
+            pitchHistory.forEach((pitch, index) => {
+                const cell = Array.from(cells).find(c => parseInt(c.dataset.r) === pitch.r && parseInt(c.dataset.c) === pitch.c);
+                if (cell) {
+                    const marker = document.createElement('div');
+                    const pType = PITCH_TYPES[pitch.type];
+                    const colorHex = '#' + pType.color.toString(16).padStart(6, '0');
+                    
+                    marker.className = 'pitch-marker absolute flex items-center justify-center rounded-full text-black font-black shadow-sm z-30 leading-none';
+                    marker.style.backgroundColor = colorHex;
+                    marker.style.width = '14px';
+                    marker.style.height = '14px';
+                    marker.style.fontSize = '9px';
+                    
+                    // セル内に複数ある場合は少しずつ右下にずらして重ねる
+                    const existingCount = cell.querySelectorAll('.pitch-marker').length;
+                    const offset = existingCount * 2;
+                    marker.style.top = `calc(50% - 7px + ${offset}px)`;
+                    marker.style.left = `calc(50% - 7px + ${offset}px)`;
+                    
+                    if (isFlipped) {
+                        marker.style.transform = 'scaleX(-1)';
+                    }
+                    
+                    marker.innerText = (index + 1).toString();
+                    
+                    cell.appendChild(marker);
+                }
+            });
+        }
+
+        // 投球履歴をクリア
+        function clearPitchHistory() {
+            pitchHistory = [];
+            updatePitchHistoryUI();
         }
 
         function evaluateBatterResult(result) {
             let overrideText = result.text;
             let overrideClass = result.class;
             let runsScored = 0;
+            let isAtBatOver = false;
 
             if (result.type === 'HOMERUN' || result.type === 'HIT' || result.type === 'SINGLE' || result.type === 'DOUBLE' || result.type === 'TRIPLE') {
                 runsScored = advanceRunners(result.type);
                 resetAtBatCount();
+                isAtBatOver = true;
             } else if (result.type === 'MISS' || result.type === 'STRIKE') {
                 countS++;
                 if (countS >= 3) {
@@ -437,6 +560,7 @@
                     overrideText = '三振！ (STRIKE OUT!)';
                     overrideClass = 'text-red-600 font-black';
                     resetAtBatCount();
+                    isAtBatOver = true;
                     if (countO >= 3) changeInning();
                 }
             } else if (result.type === 'BALL') {
@@ -446,6 +570,7 @@
                     overrideClass = 'text-green-400 font-black';
                     runsScored = advanceRunners('WALK');
                     resetAtBatCount();
+                    isAtBatOver = true;
                 }
             } else if (result.type === 'FOUL') {
                 if (countS < 2) countS++;
@@ -454,6 +579,7 @@
                 overrideText = 'アウト！ (OUT)';
                 overrideClass = 'text-red-500';
                 resetAtBatCount();
+                isAtBatOver = true;
                 if (countO >= 3) changeInning();
             }
 
@@ -461,29 +587,22 @@
                 result.subtext = (result.subtext ? result.subtext + ' | ' : '') + `+${runsScored}点 獲得!`;
             }
 
+            // 画面中央に判定テキスト表示
+            showResultPopup(overrideText, overrideClass, result.subtext || '');
+
             updateGameStatusDisplay();
 
-            const overlay = document.getElementById('result-overlay');
-            const textEl = document.getElementById('result-text');
-            const subtextEl = document.getElementById('result-subtext');
-            
-            textEl.innerText = overrideText;
-            subtextEl.innerText = result.subtext || '';
-            textEl.className = `text-5xl md:text-8xl font-black ${overrideClass} drop-shadow-[0_5px_15px_rgba(0,0,0,1)] transform scale-100 transition-transform duration-300 text-center`;
-            
             strikeZone.visible = true;
             trailInstancedMesh.visible = true;
             targetMarker.visible = true;
             if (currentMode === 'catcher') {
                 cpuGuessMarker.visible = true;
             }
-            overlay.classList.remove('hidden');
-            
-            setTimeout(() => {
-                textEl.classList.remove('scale-100');
-                textEl.classList.add('scale-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            }, 1800);
+
+            // 打席が終了した場合は履歴をリセット
+            if (isAtBatOver) {
+                setTimeout(clearPitchHistory, 2500);
+            }
         }
 
         const container = document.getElementById('canvas-container');
@@ -689,7 +808,7 @@
         scene.add(trailInstancedMesh);
 
         function getPitchSpeed(pType) {
-            if (currentMode === 'pitcher') {
+            if (currentMode === 'pitcher' || currentMode === 'catcher') {
                 return parseInt(document.getElementById('speed-slider').value, 10);
             } else {
                 let baseSpeed = pType.defaultSpeed;
@@ -721,7 +840,7 @@
         }
 
         /**
-         * ホームプレート通過時のストライクゾーン判定 (Pitch Trajectory Logic より統合)
+         * ホームプレート通過時のストライクゾーン判定
          */
         function checkStrike(arrivalPos, ballRadius = 0.037) {
             const minX = -0.215 - ballRadius;
@@ -743,7 +862,7 @@
             const pType = PITCH_TYPES[currentPitch];
             trailInstancedMesh.material.color.setHex(pType.color);
             
-            const breakSliderValue = (currentMode === 'catcher') ? 5 : parseInt(document.getElementById('break-slider').value, 10);
+            const breakSliderValue = parseInt(document.getElementById('break-slider').value, 10);
             const breakMultiplier = breakSliderValue / 5.0; 
             
             // 左投手のハンデ・軸反転の適用
@@ -849,29 +968,44 @@
 
             let specialSwingAndMiss = false;
 
+            // カット・シュート時の15%アウト向上フラグ判定
+            const isCutOrShuuto = (currentPitch === 'cutter' || currentPitch === 'shuuto');
+            const isOutBonusTriggered = isCutOrShuuto && (Math.random() < 0.15);
+
+            // 球速・変化量による追加アウトボーナス確率と空振りボーナス確率
+            let speedSliderVal = parseInt(document.getElementById('speed-slider').value, 10);
+            let breakSliderVal = parseInt(document.getElementById('break-slider').value, 10);
+            let pType = PITCH_TYPES[currentPitch];
+            let speedRatio = (speedSliderVal - pType.minSpeed) / (pType.maxSpeed - pType.minSpeed);
+            if (speedRatio < 0) speedRatio = 0;
+            if (speedRatio > 1) speedRatio = 1;
+            
+            const extraOutBonusProb = (speedRatio * 0.15) + (breakSliderVal / 10 * 0.15); 
+            const missBonus = (breakSliderVal / 10) * 0.25;
+
             if (!isActualStrike) {
                 const randVal = Math.random();
                 if (currentPitch === 'straight' && cpuBatterR === 1 && arrivalPos.y > 1.10) {
-                    if (randVal < 0.30) specialSwingAndMiss = true;
+                    if (randVal < 0.30 + missBonus) specialSwingAndMiss = true;
                 } else if (currentPitch === 'slider') {
                     const isEscapingRight = (arrivalPos.x < -0.215);
                     const isEscapingLeft = (arrivalPos.x > 0.215);
                     if (isEscapingRight || isEscapingLeft) {
                         const isOuterTarget = (isEscapingRight && cpuBatterC === 1) || (isEscapingLeft && cpuBatterC === 3);
-                        if (isOuterTarget && randVal < 0.60) {
+                        if (isOuterTarget && randVal < 0.60 + missBonus) {
                             specialSwingAndMiss = true;
-                        } else if (cpuBatterC === 2 && randVal < 0.30) {
+                        } else if (cpuBatterC === 2 && randVal < 0.30 + missBonus) {
                             specialSwingAndMiss = true;
                         }
                     }
                 } else if (currentPitch === 'fork' && arrivalPos.y < 0.50) {
-                    if (cpuBatterR === 3 && randVal < 0.70) {
+                    if (cpuBatterR === 3 && randVal < 0.70 + missBonus) {
                         specialSwingAndMiss = true;
-                    } else if (cpuBatterR === 2 && randVal < 0.30) {
+                    } else if (cpuBatterR === 2 && randVal < 0.30 + missBonus) {
                         specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'changeup' && cpuBatterR === 3 && arrivalPos.y < 0.50) {
-                    if (randVal < 0.70) specialSwingAndMiss = true;
+                    if (randVal < 0.70 + missBonus) specialSwingAndMiss = true;
                 }
 
                 if (specialSwingAndMiss) {
@@ -891,53 +1025,67 @@
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
                     
-                    const rand = Math.random();
-                    if (rand < 0.60) {
-                        resultType = 'SINGLE';
-                        resultText = '1ベースヒット！';
-                        resultClass = 'text-green-400';
-                        applyHitTrajectory('HIT');
-                    } else if (rand < 0.80) {
-                        resultType = 'DOUBLE';
-                        resultText = '2ベースヒット！';
-                        resultClass = 'text-green-300';
-                        applyHitTrajectory('HIT');
-                    } else if (rand < 0.85) {
-                        resultType = 'TRIPLE';
-                        resultText = '3ベースヒット！';
-                        resultClass = 'text-yellow-300';
-                        applyHitTrajectory('HIT');
-                    } else if (rand < 0.90) {
-                        resultType = 'HOMERUN';
-                        resultText = 'ホームラン！！';
-                        resultClass = 'text-yellow-400 animate-bounce';
-                        applyHitTrajectory('HOMERUN');
-                    } else {
+                    if (isOutBonusTriggered || Math.random() < extraOutBonusProb) {
                         resultType = 'OUT';
-                        resultText = 'アウト！';
+                        resultText = '打ち取った！(アウト)';
                         resultClass = 'text-red-500';
                         applyHitTrajectory('PULL');
+                    } else {
+                        const rand = Math.random();
+                        if (rand < 0.60) {
+                            resultType = 'SINGLE';
+                            resultText = '1ベースヒット！';
+                            resultClass = 'text-green-400';
+                            applyHitTrajectory('HIT');
+                        } else if (rand < 0.80) {
+                            resultType = 'DOUBLE';
+                            resultText = '2ベースヒット！';
+                            resultClass = 'text-green-300';
+                            applyHitTrajectory('HIT');
+                        } else if (rand < 0.85) {
+                            resultType = 'TRIPLE';
+                            resultText = '3ベースヒット！';
+                            resultClass = 'text-yellow-300';
+                            applyHitTrajectory('HIT');
+                        } else if (rand < 0.90) {
+                            resultType = 'HOMERUN';
+                            resultText = 'ホームラン！！';
+                            resultClass = 'text-yellow-400 animate-bounce';
+                            applyHitTrajectory('HOMERUN');
+                        } else {
+                            resultType = 'OUT';
+                            resultText = 'アウト！';
+                            resultClass = 'text-red-500';
+                            applyHitTrajectory('PULL');
+                        }
                     }
                 } else if (dr <= 1 && dc <= 1) {
                     hasSwung = true;
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
 
-                    const rand = Math.random();
-                    if (rand < 0.40) {
-                        resultType = 'FOUL';
-                        resultText = 'ファウル！';
-                        resultClass = 'text-yellow-400';
-                        applyHitTrajectory('FOUL');
-                    } else if (rand < 0.60) {
+                    if (isOutBonusTriggered || Math.random() < extraOutBonusProb) {
                         resultType = 'OUT';
-                        resultText = 'アウト！';
+                        resultText = '打ち取った！(アウト)';
                         resultClass = 'text-red-500';
                         applyHitTrajectory('PULL');
                     } else {
-                        resultType = 'MISS';
-                        resultText = '空振り！';
-                        resultClass = 'text-red-400';
+                        const rand = Math.random();
+                        if (rand < 0.40) {
+                            resultType = 'FOUL';
+                            resultText = 'ファウル！';
+                            resultClass = 'text-yellow-400';
+                            applyHitTrajectory('FOUL');
+                        } else if (rand < 0.60) {
+                            resultType = 'OUT';
+                            resultText = 'アウト！';
+                            resultClass = 'text-red-500';
+                            applyHitTrajectory('PULL');
+                        } else {
+                            resultType = 'MISS';
+                            resultText = '空振り！';
+                            resultClass = 'text-red-400';
+                        }
                     }
                 } else {
                     hasSwung = false;
@@ -1044,20 +1192,11 @@
             else rankText = "誤審多発... 😅";
             document.getElementById('ump-rank').innerText = rankText;
 
-            const overlay = document.getElementById('result-overlay');
-            const textEl = document.getElementById('result-text');
-            const subtextEl = document.getElementById('result-subtext');
-
-            if (isCorrect) {
-                textEl.innerText = "正解！ (CORRECT)";
-                textEl.className = "text-5xl md:text-8xl font-black text-green-400 drop-shadow-[0_5px_15px_rgba(0,0,0,1)] scale-100 transition-transform duration-300 text-center";
-            } else {
-                textEl.innerText = "誤審！ (INCORRECT)";
-                textEl.className = "text-5xl md:text-8xl font-black text-red-500 drop-shadow-[0_5px_15px_rgba(0,0,0,1)] scale-100 transition-transform duration-300 text-center";
-            }
-
-            const actualText = isActualStrike ? "実際: ストライク 🟡" : "実際: ボール 🟢";
-            subtextEl.innerText = `${actualText} (あなたの判定: ${userCall === 'STRIKE' ? 'ストライク' : 'ボール'})`;
+            // 審判モード時の判定テキスト表示
+            const umpireText = userCall === 'STRIKE' ? 'ストライク！' : 'ボール！';
+            const umpireClass = userCall === 'STRIKE' ? 'text-yellow-400' : 'text-green-400';
+            const umpireSubText = isCorrect ? '⭕ 正解！' : '❌ 誤審！';
+            showResultPopup(umpireText, umpireClass, umpireSubText);
 
             arrivalMarker.position.copy(arrivalPos);
             arrivalMarker.material.color.setHex(isActualStrike ? 0xffff00 : 0x00ff00);
@@ -1065,8 +1204,6 @@
 
             strikeZone.visible = true;
             trailInstancedMesh.visible = true;
-
-            overlay.classList.remove('hidden');
 
             const finishPitching = () => {
                 isPitching = false;
@@ -1078,31 +1215,19 @@
             };
 
             setTimeout(() => {
-                textEl.classList.remove('scale-100');
-                textEl.classList.add('scale-0');
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    finishPitching();
-                }, 300);
-            }, 1800);
+                finishPitching();
+            }, 1000);
 
             if (umpireTotalPitches >= 10) {
                 setTimeout(() => {
-                    textEl.innerText = `最終結果: ${accuracy}%`;
-                    textEl.className = "text-5xl md:text-8xl font-black text-yellow-300 drop-shadow scale-100 text-center";
-                    subtextEl.innerText = `称号: ${rankText}`;
-                    overlay.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                        overlay.classList.add('hidden');
-                        umpireTotalPitches = 0;
-                        umpireCorrectCount = 0;
-                        document.getElementById('ump-ball-count').innerText = "0 / 10";
-                        document.getElementById('ump-correct-count').innerText = "0";
-                        document.getElementById('ump-accuracy').innerText = "100 %";
-                        document.getElementById('ump-rank').innerText = "判定待ち";
-                    }, 3000);
-                }, 2200);
+                    umpireTotalPitches = 0;
+                    umpireCorrectCount = 0;
+                    document.getElementById('ump-ball-count').innerText = "0 / 10";
+                    document.getElementById('ump-correct-count').innerText = "0";
+                    document.getElementById('ump-accuracy').innerText = "100 %";
+                    document.getElementById('ump-rank').innerText = "判定待ち";
+                    clearPitchHistory();
+                }, 2000);
             }
         }
 
@@ -1133,6 +1258,13 @@
                 ballData.vel.addScaledVector(ballData.acc, dt);
                 ballData.pos.addScaledVector(ballData.vel, dt);
                 
+                if (ballData.pos.y < ballRadius) {
+                    ballData.pos.y = ballRadius;
+                    ballData.vel.y *= -0.4; // Y方向の速度を反転・減衰（バウンド）
+                    ballData.vel.z *= 0.8;  // 摩擦で減速
+                    ballData.vel.x *= 0.8;
+                }
+                
                 // ホームプレート(z=0)を通過した瞬間のストライク判定
                 if (prevZ > 0 && ballData.pos.z <= 0) {
                     arrivalPos.copy(ballData.pos);
@@ -1154,6 +1286,10 @@
 
                 if (isFinished) {
                     ballData.active = false;
+                    
+                    // 到達位置を履歴に記録
+                    const closestCell = getClosestGridCell(arrivalPos.x, arrivalPos.y);
+                    addPitchToHistory(currentPitch, closestCell.r, closestCell.c);
                     
                     if (currentMode === 'batter') {
                         if (!hasSwung) {
@@ -1186,7 +1322,7 @@
 
             renderer.render(scene, activeCamera);
         }
-        
+
         function updateSpeedSlider(pitchKey) {
             const pType = PITCH_TYPES[pitchKey];
             const speedSlider = document.getElementById('speed-slider');
@@ -1290,6 +1426,9 @@
                 } else {
                     grid.style.transform = 'scaleX(-1)';
                 }
+
+                // 視点が変更された時に履歴表示も向きを更新
+                updatePitchHistoryUI();
             });
         });
 
@@ -1308,7 +1447,7 @@
                 const cell = document.createElement('div');
                 const isStrike = r >= 1 && r <= 3 && c >= 1 && c <= 3;
                 
-                cell.className = `cursor-pointer w-full h-full transition-colors flex items-center justify-center ${isStrike ? 'bg-red-500/30 hover:bg-red-500/60' : 'bg-gray-800/60 hover:bg-gray-600/80'}`;
+                cell.className = `cursor-pointer w-full h-full transition-colors relative overflow-hidden ${isStrike ? 'bg-red-500/30 hover:bg-red-500/60' : 'bg-gray-800/60 hover:bg-gray-600/80'}`;
                 
                 if(r === 2 && c === 2) {
                     cell.classList.add('ring-2', 'ring-blue-400', 'z-10');
@@ -1372,6 +1511,9 @@
                 
                 currentMode = e.target.dataset.mode;
                 
+                // モード変更時に履歴をクリア
+                clearPitchHistory();
+                
                 const pitcherControls = document.getElementById('pitcher-controls');
                 const catcherControls = document.getElementById('catcher-controls');
                 const batterControls = document.getElementById('batter-controls');
@@ -1382,6 +1524,13 @@
                 const statsPanel = document.getElementById('stats-panel');
                 const leftTargetContainer = document.getElementById('left-target-container');
                 const cpuGuessLegend = document.getElementById('cpu-guess-legend');
+                const pitchSliders = document.getElementById('pitch-sliders');
+
+                if (currentMode === 'catcher') {
+                    catcherControls.insertBefore(pitchSliders, document.getElementById('catcher-sign-btn'));
+                } else if (currentMode === 'pitcher') {
+                    pitcherControls.insertBefore(pitchSliders, document.getElementById('throw-btn'));
+                }
                 
                 pitcherControls.classList.add('hidden');
                 pitcherControls.classList.remove('flex');
@@ -1600,6 +1749,23 @@
         window.onload = () => {
             const rightBtn = document.querySelector('.arm-btn[data-arm="right"]');
             if (rightBtn) rightBtn.classList.add('bg-blue-600', 'text-white');
+
+            // 判定テキストON/OFF切り替えイベント
+            const resultTextToggleBtn = document.getElementById('result-text-toggle-btn');
+            if (resultTextToggleBtn) {
+                resultTextToggleBtn.addEventListener('click', (e) => {
+                    showResultTextEnabled = !showResultTextEnabled;
+                    if (showResultTextEnabled) {
+                        e.target.innerText = 'ON';
+                        e.target.className = 'px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-blue-600 text-white font-bold';
+                    } else {
+                        e.target.innerText = 'OFF';
+                        e.target.className = 'px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-gray-700 text-gray-400 font-bold';
+                        const container = document.getElementById('result-popup-container');
+                        if (container) container.classList.add('hidden');
+                    }
+                });
+            }
             
             updateGameStatusDisplay();
             updateSpeedSlider(currentPitch);
