@@ -242,17 +242,6 @@
                         <button class="pitch-btn bg-gray-700 hover:bg-gray-600 rounded-lg p-2 text-xs sm:text-sm font-bold" data-pitch="changeup" style="border-bottom: 3px solid #ff44ff">チェンジ</button>
                     </div>
                     
-                    <div class="flex flex-row items-center gap-2" id="pitch-sliders">
-                        <div class="flex flex-col items-center bg-gray-800 p-2 rounded-lg min-w-[100px]">
-                            <div class="text-xs font-bold text-gray-300 mb-1">球速: <span id="speed-value-display" class="text-blue-400 text-base">150</span>km/h</div>
-                            <input type="range" min="140" max="165" value="150" id="speed-slider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
-                        </div>
-                        <div class="flex flex-col items-center bg-gray-800 p-2 rounded-lg min-w-[100px]">
-                            <div class="text-xs font-bold text-gray-300 mb-1">変化量: <span id="break-value-display" class="text-blue-400 text-base">5</span></div>
-                            <input type="range" min="1" max="10" value="5" id="break-slider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
-                        </div>
-                    </div>
-                    
                     <button id="throw-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all text-base sm:text-lg w-full sm:w-auto flex-shrink-0">
                         投球
                     </button>
@@ -273,6 +262,18 @@
                     <button id="catcher-sign-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all text-base sm:text-lg w-full sm:w-auto flex-shrink-0">
                         サイン（投球要求）
                     </button>
+                </div>
+
+                <!-- 投手・捕手モード共通 球速・変化量スライダー -->
+                <div class="flex flex-row items-center gap-2" id="pitch-sliders">
+                    <div class="flex flex-col items-center bg-gray-800 p-2 rounded-lg min-w-[100px]">
+                        <div class="text-xs font-bold text-gray-300 mb-1">球速: <span id="speed-value-display" class="text-blue-400 text-base">150</span>km/h</div>
+                        <input type="range" min="140" max="165" value="150" id="speed-slider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                    <div class="flex flex-col items-center bg-gray-800 p-2 rounded-lg min-w-[100px]">
+                        <div class="text-xs font-bold text-gray-300 mb-1">変化量: <span id="break-value-display" class="text-blue-400 text-base">5</span></div>
+                        <input type="range" min="1" max="10" value="5" id="break-slider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
                 </div>
 
                 <!-- 打者モード用コントロール -->
@@ -1197,46 +1198,71 @@
 
             let specialSwingAndMiss = false;
 
-            const isCutOrShuuto = (currentPitch === 'cutter' || currentPitch === 'shuuto');
-            const isOutBonusTriggered = isCutOrShuuto && (Math.random() < 0.15);
-
+            // スライダー値からの割合算出 (球速・変化量)
             let speedSliderVal = parseInt(document.getElementById('speed-slider').value, 10);
             let breakSliderVal = parseInt(document.getElementById('break-slider').value, 10);
             let pType = PITCH_TYPES[currentPitch];
             let speedRatio = (speedSliderVal - pType.minSpeed) / (pType.maxSpeed - pType.minSpeed);
             if (speedRatio < 0) speedRatio = 0;
             if (speedRatio > 1) speedRatio = 1;
-            
-            const extraOutBonusProb = (speedRatio * 0.15) + (breakSliderVal / 10 * 0.15); 
-            const missBonus = (breakSliderVal / 10) * 0.25;
+            let breakRatio = breakSliderVal / 10.0; // 0.1 〜 1.0
 
+            // 球速・変化量の上昇によるアウト確率上昇ボーナス (最大+40%)
+            const totalOutBonus = (speedRatio * 0.18) + (breakRatio * 0.22); 
+
+            // 変化量に応じた空振りボーナス (大きな変化量で空振り補正+45%)
+            const missBonus = Math.pow(breakRatio, 1.2) * 0.45;
+
+            // ボール球に対する空振り判定
             if (!isActualStrike) {
                 const randVal = Math.random();
-                if (currentPitch === 'straight' && cpuBatterR === 1 && arrivalPos.y > 1.10) {
-                    if (randVal < 0.30 + missBonus) specialSwingAndMiss = true;
+                
+                if (currentPitch === 'straight') {
+                    // ストレート：高めボール球（ノビ・球速・変化量で空振り率大幅上昇）
+                    if (arrivalPos.y > 1.05) {
+                        const straightMissProb = 0.20 + missBonus + (speedRatio * 0.20);
+                        if (randVal < straightMissProb) specialSwingAndMiss = true;
+                    }
                 } else if (currentPitch === 'slider') {
-                    const isEscapingRight = (arrivalPos.x < -0.215);
-                    const isEscapingLeft = (arrivalPos.x > 0.215);
-                    if (isEscapingRight || isEscapingLeft) {
-                        const isOuterTarget = (isEscapingRight && cpuBatterC === 1) || (isEscapingLeft && cpuBatterC === 3);
-                        if (isOuterTarget && randVal < 0.60 + missBonus) {
-                            specialSwingAndMiss = true;
-                        } else if (cpuBatterC === 2 && randVal < 0.30 + missBonus) {
-                            specialSwingAndMiss = true;
-                        }
+                    // スライダー：外角・大きく逃げるボール球で空振り率大幅上昇
+                    const isEscaping = (Math.abs(arrivalPos.x) > 0.215);
+                    if (isEscaping) {
+                        const sliderMissProb = 0.30 + missBonus;
+                        if (randVal < sliderMissProb) specialSwingAndMiss = true;
                     }
-                } else if (currentPitch === 'fork' && arrivalPos.y < 0.50) {
-                    if (cpuBatterR === 3 && randVal < 0.70 + missBonus) {
-                        specialSwingAndMiss = true;
-                    } else if (cpuBatterR === 2 && randVal < 0.30 + missBonus) {
+                } else if (currentPitch === 'fork') {
+                    // フォーク：低めに落ちるボール球で落差（変化量）に応じた空振り率上昇
+                    if (arrivalPos.y < 0.55) {
+                        const forkMissProb = 0.35 + missBonus;
+                        if (randVal < forkMissProb) specialSwingAndMiss = true;
+                    }
+                } else if (currentPitch === 'changeup') {
+                    // チェンジアップ：低め・緩急ボール球で空振り率上昇
+                    if (arrivalPos.y < 0.60) {
+                        const changeupMissProb = 0.30 + missBonus;
+                        if (randVal < changeupMissProb) specialSwingAndMiss = true;
+                    }
+                } else {
+                    // その他の変化球
+                    if (randVal < 0.15 + missBonus * 0.6) {
                         specialSwingAndMiss = true;
                     }
-                } else if (currentPitch === 'changeup' && cpuBatterR === 3 && arrivalPos.y < 0.50) {
-                    if (randVal < 0.70 + missBonus) specialSwingAndMiss = true;
                 }
 
                 if (specialSwingAndMiss) {
                     resultText = '空振り！';
+                }
+            }
+
+            // ストライクゾーン内でも変化量が非常に高い場合、空振りする可能性を加算
+            let strikeMissProb = 0;
+            if (isActualStrike) {
+                if (['straight', 'slider', 'fork', 'changeup'].includes(currentPitch)) {
+                    if (dr > 0 || dc > 0) {
+                        strikeMissProb = (breakRatio * 0.30) + (speedRatio * 0.15);
+                    } else {
+                        strikeMissProb = (breakRatio >= 0.8) ? 0.20 : 0.05;
+                    }
                 }
             }
 
@@ -1247,67 +1273,73 @@
                 resultType = 'MISS';
                 resultClass = 'text-red-400';
             } else if (isActualStrike) {
-                if (dr === 0 && dc === 0) {
+                const strikeRand = Math.random();
+
+                // 高変化量・ズレによるストライクゾーン内の空振り
+                if (strikeRand < strikeMissProb) {
+                    hasSwung = true;
+                    isSwingingAnim = true;
+                    swingAnimProgress = 0;
+                    resultType = 'MISS';
+                    resultText = '空振り！';
+                    resultClass = 'text-red-400';
+                } else if (dr === 0 && dc === 0) {
+                    // 打者の狙い通りのコース
                     hasSwung = true;
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
                     
-                    if (isOutBonusTriggered || Math.random() < extraOutBonusProb) {
+                    // 球速と変化量が上がるほど、打たれても詰まらせて「アウト」にできる確率が上昇
+                    const outChance = 0.10 + totalOutBonus; 
+                    if (Math.random() < outChance) {
                         resultType = 'OUT';
-                        resultText = '打ち取った！(アウト)';
+                        resultText = '詰まらせた！(アウト)';
                         resultClass = 'text-red-500';
                         applyHitTrajectory('PULL');
                     } else {
                         const rand = Math.random();
-                        if (rand < 0.60) {
+                        if (rand < 0.55) {
                             resultType = 'SINGLE';
                             resultText = '1ベースヒット！';
                             resultClass = 'text-green-400';
                             applyHitTrajectory('HIT');
-                        } else if (rand < 0.80) {
+                        } else if (rand < 0.75) {
                             resultType = 'DOUBLE';
                             resultText = '2ベースヒット！';
                             resultClass = 'text-green-300';
                             applyHitTrajectory('HIT');
-                        } else if (rand < 0.85) {
+                        } else if (rand < 0.82) {
                             resultType = 'TRIPLE';
                             resultText = '3ベースヒット！';
                             resultClass = 'text-yellow-300';
                             applyHitTrajectory('HIT');
-                        } else if (rand < 0.90) {
+                        } else {
                             resultType = 'HOMERUN';
                             resultText = 'ホームラン！！';
                             resultClass = 'text-yellow-400 animate-bounce';
                             applyHitTrajectory('HOMERUN');
-                        } else {
-                            resultType = 'OUT';
-                            resultText = 'アウト！';
-                            resultClass = 'text-red-500';
-                            applyHitTrajectory('PULL');
                         }
                     }
                 } else if (dr <= 1 && dc <= 1) {
+                    // 狙い付近のコース
                     hasSwung = true;
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
 
-                    if (isOutBonusTriggered || Math.random() < extraOutBonusProb) {
+                    // 球速・変化量が上がると打ち取り率・ファウル/空振り率が大幅アップ
+                    const outChance = 0.35 + totalOutBonus * 0.8;
+                    if (Math.random() < outChance) {
                         resultType = 'OUT';
                         resultText = '打ち取った！(アウト)';
                         resultClass = 'text-red-500';
                         applyHitTrajectory('PULL');
                     } else {
                         const rand = Math.random();
-                        if (rand < 0.40) {
+                        if (rand < 0.50) {
                             resultType = 'FOUL';
                             resultText = 'ファウル！';
                             resultClass = 'text-yellow-400';
                             applyHitTrajectory('FOUL');
-                        } else if (rand < 0.60) {
-                            resultType = 'OUT';
-                            resultText = 'アウト！';
-                            resultClass = 'text-red-500';
-                            applyHitTrajectory('PULL');
                         } else {
                             resultType = 'MISS';
                             resultText = '空振り！';
@@ -1798,15 +1830,21 @@
                 if (currentMode === 'pitcher') {
                     document.getElementById('pitcher-controls').classList.remove('hidden');
                     document.getElementById('pitcher-controls').classList.add('flex');
+                    document.getElementById('pitch-sliders').classList.remove('hidden');
+                    document.getElementById('pitch-sliders').classList.add('flex');
                     uiCamBtns.forEach(b => { if(b.dataset.view==='pitcher') b.click(); });
                 } else if (currentMode === 'catcher') {
                     document.getElementById('catcher-controls').classList.remove('hidden');
                     document.getElementById('catcher-controls').classList.add('flex');
+                    document.getElementById('pitch-sliders').classList.remove('hidden');
+                    document.getElementById('pitch-sliders').classList.add('flex');
                     document.getElementById('bso-panel').classList.remove('hidden');
                     document.getElementById('cpu-guess-legend').classList.remove('hidden');
                     resetAllCounts();
                     uiCamBtns.forEach(b => { if(b.dataset.view==='catcher') b.click(); });
                 } else if (currentMode === 'batter') {
+                    document.getElementById('pitch-sliders').classList.add('hidden');
+                    document.getElementById('pitch-sliders').classList.remove('flex');
                     document.getElementById('batter-controls').classList.remove('hidden');
                     document.getElementById('batter-controls').classList.add('flex');
                     document.getElementById('bso-panel').classList.remove('hidden');
@@ -1824,6 +1862,8 @@
                     
                     uiCamBtns.forEach(b => { if(b.dataset.view==='batterRight') b.click(); });
                 } else if (currentMode === 'umpire') {
+                    document.getElementById('pitch-sliders').classList.add('hidden');
+                    document.getElementById('pitch-sliders').classList.remove('flex');
                     document.getElementById('umpire-controls').classList.remove('hidden');
                     document.getElementById('umpire-controls').classList.add('flex');
                     document.getElementById('umpire-stats-panel').classList.remove('hidden');
