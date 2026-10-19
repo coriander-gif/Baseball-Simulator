@@ -94,7 +94,7 @@
                         <h1 class="text-xl font-bold mb-2">Pitching Simulator</h1>
                         <p class="text-sm text-gray-300">モード、利き腕、難易度を選択してください。</p>
                     </div>
-                    <!-- 投球割合・平均球速ボタン -->
+                    <!-- 投球割合・平均球速・履歴削除ボタン -->
                     <div class="flex flex-col gap-1.5 ml-4">
                         <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
@@ -109,6 +109,13 @@
                                 <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
                             </svg>
                             平均球速
+                        </button>
+                        <button id="clear-history-btn" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28 mt-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                            履歴削除
                         </button>
                     </div>
                 </div>
@@ -154,7 +161,7 @@
                 </div>
             </div>
 
-            <!-- Game Status Panel (得点・イニング・ランナー・SBO) -->
+            <!-- Game Status Panel -->
             <div class="ui-panel rounded-xl p-3 w-48 hidden" id="bso-panel">
                 <div class="flex justify-between items-center text-xs font-bold border-b border-gray-700 pb-1.5 mb-2">
                     <span id="inning-display" class="text-yellow-400">1回裏</span>
@@ -451,7 +458,7 @@
             vel: new THREE.Vector3(),
             acc: new THREE.Vector3(),
             active: false,
-            speed: 0 // 追加：球速を保持
+            speed: 0 // 球速を保持
         };
 
         // 投球履歴を保持する配列
@@ -550,7 +557,7 @@
                 countO = 0;
                 currentInning++;
                 updateGameStatusDisplay();
-                clearPitchHistory();
+                // ※打席終了・チェンジ時の自動履歴リセットを廃止しました
             }, 1800);
         }
 
@@ -782,7 +789,6 @@
                 listContainer.appendChild(item);
             });
 
-            // アニメーション用に少し遅延させて幅を適用
             setTimeout(() => {
                 const bars = listContainer.querySelectorAll('[data-target-width]');
                 bars.forEach(bar => {
@@ -810,6 +816,11 @@
             if (e.target === document.getElementById('avg-speed-modal')) {
                 document.getElementById('avg-speed-modal').classList.add('hidden');
             }
+        });
+
+        // 履歴削除ボタンイベント
+        document.getElementById('clear-history-btn').addEventListener('click', () => {
+            clearPitchHistory();
         });
 
         function evaluateBatterResult(result) {
@@ -867,9 +878,7 @@
                 cpuGuessMarker.visible = true;
             }
 
-            if (isAtBatOver) {
-                setTimeout(clearPitchHistory, 2500);
-            }
+            // ※打席終了時の自動履歴リセットを廃止しました
         }
 
         const container = document.getElementById('canvas-container');
@@ -1476,7 +1485,7 @@
                     document.getElementById('ump-correct-count').innerText = "0";
                     document.getElementById('ump-accuracy').innerText = "100 %";
                     document.getElementById('ump-rank').innerText = "判定待ち";
-                    clearPitchHistory();
+                    // ※審判モード10球終了時の自動履歴リセットを廃止しました
                 }, 2000);
             }
         }
@@ -1758,136 +1767,109 @@
                 
                 currentMode = e.target.dataset.mode;
                 
-                clearPitchHistory();
+                // コントロールパネルの切り替え
+                document.getElementById('pitcher-controls').classList.add('hidden');
+                document.getElementById('catcher-controls').classList.add('hidden');
+                document.getElementById('batter-controls').classList.add('hidden');
+                document.getElementById('umpire-controls').classList.add('hidden');
                 
-                const pitcherControls = document.getElementById('pitcher-controls');
-                const catcherControls = document.getElementById('catcher-controls');
-                const batterControls = document.getElementById('batter-controls');
-                const umpireControls = document.getElementById('umpire-controls');
-                const gridTitle = document.getElementById('grid-title');
-                const bsoPanel = document.getElementById('bso-panel');
-                const umpireStatsPanel = document.getElementById('umpire-stats-panel');
-                const statsPanel = document.getElementById('stats-panel');
-                const leftTargetContainer = document.getElementById('left-target-container');
-                const cpuGuessLegend = document.getElementById('cpu-guess-legend');
-                const pitchSliders = document.getElementById('pitch-sliders');
+                document.getElementById('bso-panel').classList.add('hidden');
+                document.getElementById('umpire-stats-panel').classList.add('hidden');
+                document.getElementById('stats-panel').classList.remove('hidden');
 
-                if (currentMode === 'catcher') {
-                    catcherControls.insertBefore(pitchSliders, document.getElementById('catcher-sign-btn'));
-                } else if (currentMode === 'pitcher') {
-                    pitcherControls.insertBefore(pitchSliders, document.getElementById('throw-btn'));
-                }
-                
-                pitcherControls.classList.add('hidden');
-                pitcherControls.classList.remove('flex');
-                catcherControls.classList.add('hidden');
-                catcherControls.classList.remove('flex');
-                batterControls.classList.add('hidden');
-                batterControls.classList.remove('flex');
-                umpireControls.classList.add('hidden');
-                umpireControls.classList.remove('flex');
-                
-                bsoPanel.classList.add('hidden');
-                umpireStatsPanel.classList.add('hidden');
-                statsPanel.classList.remove('hidden');
-                leftTargetContainer.classList.remove('hidden');
-                cpuGuessLegend.classList.add('hidden');
-                cpuGuessMarker.visible = false;
-
-                if (currentMode === 'batter') {
-                    batterControls.classList.remove('hidden');
-                    batterControls.classList.add('flex');
-                    bsoPanel.classList.remove('hidden');
-                    
-                    targetMarker.visible = false;
-                    batGroup.visible = true;
-                    gridTitle.innerText = "コース予測(打者)";
-                    
-                    if (batterSide === 'right') {
-                        document.querySelector('.cam-btn[data-view="batterRight"]').click();
-                    } else {
-                        document.querySelector('.cam-btn[data-view="batterLeft"]').click();
-                    }
-                    
-                    Array.from(gridContainer.children).forEach(child => {
-                        child.classList.remove('ring-2', 'ring-blue-400', 'ring-4', 'ring-yellow-400', 'ring-purple-500', 'bg-purple-600/60', 'z-10', 'z-20');
-                    });
-                    batterGuess = {r: 2, c: 2};
-                    const centerCell = Array.from(gridContainer.children).find(c => c.dataset.r == '2' && c.dataset.c == '2');
-                    if(centerCell) centerCell.classList.add('ring-4', 'ring-yellow-400', 'z-10');
-                    
-                } else if (currentMode === 'catcher') {
-                    catcherControls.classList.remove('hidden');
-                    catcherControls.classList.add('flex');
-                    bsoPanel.classList.remove('hidden');
-                    cpuGuessLegend.classList.remove('hidden');
-
-                    targetMarker.visible = true;
-                    batGroup.visible = true;
-                    gridTitle.innerText = "コース要求(捕手)";
-
-                    Array.from(gridContainer.children).forEach(child => {
-                        child.classList.remove('ring-4', 'ring-yellow-400', 'ring-2', 'ring-blue-400', 'ring-purple-500', 'bg-purple-600/60', 'z-10', 'z-20');
-                    });
-                    catcherTarget = {r: 2, c: 2};
-                    TARGET_POINT.x = xValues[2];
-                    TARGET_POINT.y = yValues[2];
-                    targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
-
-                    const centerCell = Array.from(gridContainer.children).find(c => c.dataset.r == '2' && c.dataset.c == '2');
-                    if(centerCell) centerCell.classList.add('ring-2', 'ring-blue-400', 'z-10');
-
-                    document.querySelector('.cam-btn[data-view="catcher"]').click();
-
-                } else if (currentMode === 'umpire') {
-                    umpireControls.classList.remove('hidden');
-                    umpireControls.classList.add('flex');
-                    umpireStatsPanel.classList.remove('hidden');
-                    leftTargetContainer.classList.add('hidden');
-                    
-                    targetMarker.visible = false;
-                    batGroup.visible = false;
-                    
-                    isPitching = false;
-                    const umpThrowBtn = document.getElementById('umpire-throw-btn');
-                    if (umpThrowBtn) {
-                        umpThrowBtn.disabled = false;
-                        umpThrowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                    setUmpireButtonsEnabled(false);
-
-                    document.querySelector('.cam-btn[data-view="catcher"]').click();
-
-                } else { 
-                    pitcherControls.classList.remove('hidden');
-                    pitcherControls.classList.add('flex');
-                    bsoPanel.classList.remove('hidden');
-                    
-                    targetMarker.visible = true;
-                    batGroup.visible = false;
-                    gridTitle.innerText = "コース指定";
-                    
-                    Array.from(gridContainer.children).forEach(child => {
-                        child.classList.remove('ring-4', 'ring-yellow-400', 'ring-2', 'ring-blue-400', 'ring-purple-500', 'bg-purple-600/60', 'z-10', 'z-20');
-                    });
-                    const r = yValues.indexOf(TARGET_POINT.y);
-                    const c = xValues.indexOf(TARGET_POINT.x);
-                    const cell = Array.from(gridContainer.children).find(child => child.dataset.r == r && child.dataset.c == c);
-                    if(cell) cell.classList.add('ring-2', 'ring-blue-400', 'z-10');
-
+                if (currentMode === 'pitcher') {
+                    document.getElementById('pitcher-controls').classList.remove('hidden');
+                    document.getElementById('pitcher-controls').classList.add('flex');
                     document.querySelector('.cam-btn[data-view="pitcher"]').click();
+                    document.getElementById('grid-title').innerText = "コース指定";
+                    document.getElementById('cpu-guess-legend').classList.add('hidden');
+                } else if (currentMode === 'catcher') {
+                    document.getElementById('catcher-controls').classList.remove('hidden');
+                    document.getElementById('catcher-controls').classList.add('flex');
+                    document.querySelector('.cam-btn[data-view="catcher"]').click();
+                    document.getElementById('bso-panel').classList.remove('hidden');
+                    document.getElementById('grid-title').innerText = "要求コース";
+                    document.getElementById('cpu-guess-legend').classList.remove('hidden');
+                    resetAllCounts();
+                } else if (currentMode === 'batter') {
+                    document.getElementById('batter-controls').classList.remove('hidden');
+                    document.getElementById('batter-controls').classList.add('flex');
+                    document.querySelector('.cam-btn[data-view="batterRight"]').click();
+                    document.getElementById('bso-panel').classList.remove('hidden');
+                    document.getElementById('grid-title').innerText = "狙い目";
+                    document.getElementById('cpu-guess-legend').classList.add('hidden');
+                    resetAllCounts();
+                } else if (currentMode === 'umpire') {
+                    document.getElementById('umpire-controls').classList.remove('hidden');
+                    document.getElementById('umpire-controls').classList.add('flex');
+                    document.querySelector('.cam-btn[data-view="catcher"]').click();
+                    document.getElementById('umpire-stats-panel').classList.remove('hidden');
+                    document.getElementById('stats-panel').classList.add('hidden');
+                    document.getElementById('grid-title').innerText = "コース確認";
+                    document.getElementById('cpu-guess-legend').classList.add('hidden');
+                    umpireTotalPitches = 0;
+                    umpireCorrectCount = 0;
+                    document.getElementById('ump-ball-count').innerText = "0 / 10";
+                    document.getElementById('ump-correct-count').innerText = "0";
+                    document.getElementById('ump-accuracy').innerText = "100 %";
+                    document.getElementById('ump-rank').innerText = "判定待ち";
+                    // ※モード切替時の自動履歴リセットを廃止しました
                 }
             });
         });
 
-        document.getElementById('swing-btn').addEventListener('click', performSwing);
+        // 投手・捕手モード ボタンイベント
+        document.getElementById('throw-btn').addEventListener('click', throwPitch);
         document.getElementById('catcher-sign-btn').addEventListener('click', () => {
-            if (isPitching) return;
+            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
             throwPitch();
         });
+
+        // 打者モード用 CPU投球
+        document.getElementById('cpu-throw-btn').addEventListener('click', () => {
+            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
+            
+            // CPU Target
+            cpuTarget.r = Math.floor(Math.random() * 5);
+            cpuTarget.c = Math.floor(Math.random() * 5);
+            TARGET_POINT.x = xValues[cpuTarget.c];
+            TARGET_POINT.y = yValues[cpuTarget.r];
+            targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
+
+            throwPitch();
+        });
+
+        document.getElementById('swing-btn').addEventListener('click', performSwing);
+
+        // 審判モード ボタンイベント
+        document.getElementById('umpire-throw-btn').addEventListener('click', () => {
+            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
+            
+            let targetR = Math.floor(Math.random() * 5);
+            let targetC = Math.floor(Math.random() * 5);
+            TARGET_POINT.x = xValues[targetC];
+            TARGET_POINT.y = yValues[targetR];
+            targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
+            
+            throwPitch();
+        });
+
         document.getElementById('umpire-strike-btn').addEventListener('click', () => performUmpireCall('STRIKE'));
         document.getElementById('umpire-ball-btn').addEventListener('click', () => performUmpireCall('BALL'));
-        
+
+        // Keyboard inputs
+        window.addEventListener('keydown', (e) => {
+            if (currentMode === 'batter' && (e.code === 'Space' || e.code === 'Enter')) {
+                performSwing();
+            } else if (currentMode === 'umpire') {
+                if (e.key === 's' || e.key === 'S' || e.key === 'ArrowRight') {
+                    performUmpireCall('STRIKE');
+                } else if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') {
+                    performUmpireCall('BALL');
+                }
+            }
+        });
+
         document.getElementById('result-text-toggle-btn').addEventListener('click', (e) => {
             showResultTextEnabled = !showResultTextEnabled;
             if (showResultTextEnabled) {
@@ -1896,103 +1878,10 @@
             } else {
                 e.target.innerText = 'OFF';
                 e.target.classList.replace('bg-blue-600', 'bg-gray-600');
-                document.getElementById('result-popup-container').classList.add('hidden');
             }
         });
 
-        window.addEventListener('keydown', (e) => {
-            if (currentMode === 'batter' && e.code === 'Space') {
-                e.preventDefault();
-                performSwing();
-            } else if (currentMode === 'umpire') {
-                if (e.code === 'KeyS' || e.code === 'ArrowRight') {
-                    e.preventDefault();
-                    performUmpireCall('STRIKE');
-                } else if (e.code === 'KeyB' || e.code === 'ArrowLeft') {
-                    e.preventDefault();
-                    performUmpireCall('BALL');
-                }
-            }
-        });
-
-        function triggerCpuPitch() {
-            if (isPitching) return;
-            
-            let randomPitch;
-            if (Math.random() < 0.45) {
-                randomPitch = 'straight';
-            } else {
-                const breakingBalls = ['curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'];
-                randomPitch = breakingBalls[Math.floor(Math.random() * breakingBalls.length)];
-            }
-            currentPitch = randomPitch;
-            
-            document.querySelectorAll('.pitch-btn').forEach(b => b.classList.remove('active'));
-            const pBtn = document.querySelector(`.pitch-btn[data-pitch="${randomPitch}"]`);
-            if (pBtn) pBtn.classList.add('active');
-            
-            const randomBreak = Math.floor(Math.random() * 10) + 1;
-            document.getElementById('break-slider').value = randomBreak;
-            document.getElementById('break-value-display').innerText = randomBreak;
-            
-            updateSpeedSlider(randomPitch); 
-
-            if (currentMode === 'umpire') {
-                let candidates = grid75;
-
-                if (currentDifficulty === 'hard') {
-                    const vitaCells = grid75.filter(g => g.isVita);
-                    candidates = vitaCells.length > 0 ? vitaCells : grid75;
-                } else if (currentDifficulty === 'normal') {
-                    if (Math.random() < 0.70) {
-                        const vitaCells = grid75.filter(g => g.isVita);
-                        candidates = vitaCells.length > 0 ? vitaCells : grid75;
-                    }
-                }
-
-                const selected = candidates[Math.floor(Math.random() * candidates.length)];
-                TARGET_POINT.x = selected.x;
-                TARGET_POINT.y = selected.y;
-                cpuTarget = { r: Math.floor(selected.r / 3), c: selected.c };
-
-            } else {
-                let randR, randC;
-                if (currentDifficulty === 'hard') {
-                    const edgeRC = [0, 1, 3, 4];
-                    randR = edgeRC[Math.floor(Math.random() * edgeRC.length)];
-                    randC = edgeRC[Math.floor(Math.random() * edgeRC.length)];
-                } else if (currentDifficulty === 'normal') {
-                    if (Math.random() < 0.65) {
-                        const edgeRC = [0, 1, 3, 4];
-                        randR = edgeRC[Math.floor(Math.random() * edgeRC.length)];
-                        randC = edgeRC[Math.floor(Math.random() * edgeRC.length)];
-                    } else {
-                        randR = Math.floor(Math.random() * 5);
-                        randC = Math.floor(Math.random() * 5);
-                    }
-                } else {
-                    if (Math.random() < 0.65) {
-                        randR = Math.floor(Math.random() * 3) + 1;
-                        randC = Math.floor(Math.random() * 3) + 1;
-                    } else {
-                        randR = Math.floor(Math.random() * 5);
-                        randC = Math.floor(Math.random() * 5);
-                    }
-                }
-
-                cpuTarget = { r: randR, c: randC };
-                TARGET_POINT.x = xValues[randC];
-                TARGET_POINT.y = yValues[randR];
-            }
-
-            targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
-            throwPitch();
-        }
-
-        document.getElementById('cpu-throw-btn').addEventListener('click', triggerCpuPitch);
-        document.getElementById('umpire-throw-btn').addEventListener('click', triggerCpuPitch);
-        document.getElementById('throw-btn').addEventListener('click', throwPitch);
-
+        // Resize handler
         window.addEventListener('resize', () => {
             const width = window.innerWidth;
             const height = window.innerHeight;
@@ -2004,9 +1893,12 @@
             });
         });
 
-        window.onload = () => {
-            const rightBtn = document.querySelector('.arm-btn[data-arm="right"]');
-            if (rightBtn) rightBtn.classList.add('bg-blue-600', 'text-white');
+        // Start
+        updateSpeedSlider(currentPitch);
+        document.querySelector('.mode-btn[data-mode="pitcher"]').click();
+        
+        // Start animation loop
+        window.onload = function () {
             animate();
         };
 
