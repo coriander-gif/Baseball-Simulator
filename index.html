@@ -76,8 +76,20 @@
         <!-- Header / View Controls -->
         <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2">
             <div class="ui-panel rounded-xl p-4">
-                <h1 class="text-xl font-bold mb-2">Pitching Simulator</h1>
-                <p class="text-sm text-gray-300 mb-2">モード、利き腕、難易度を選択してください。</p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-xl font-bold mb-2">Pitching Simulator</h1>
+                        <p class="text-sm text-gray-300 mb-2">モード、利き腕、難易度を選択してください。</p>
+                    </div>
+                    <!-- 投球割合ボタン -->
+                    <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                            <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
+                        </svg>
+                        投球割合
+                    </button>
+                </div>
                 
                 <div class="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg mb-2 w-max flex-wrap gap-y-1">
                     <button class="mode-btn bg-blue-600 text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="pitcher">投手モード</button>
@@ -280,6 +292,32 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- 投球割合 モーダル -->
+    <div id="pitch-ratio-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-auto">
+        <div class="ui-panel rounded-2xl p-6 w-full max-w-md flex flex-col items-center relative shadow-2xl border border-gray-600">
+            <button id="close-ratio-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854z"/>
+                </svg>
+            </button>
+            <h2 class="text-xl font-black mb-4 text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-indigo-400" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
+                </svg>
+                投球割合 (全 <span id="ratio-total-count" class="text-indigo-300">0</span> 球)
+            </h2>
+            
+            <div class="relative w-full flex justify-center mb-6">
+                <canvas id="ratio-chart" width="280" height="280" class="max-w-full drop-shadow-lg"></canvas>
+            </div>
+            
+            <div id="ratio-legend" class="w-full flex flex-wrap justify-center gap-2 text-sm max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Legends injected via JS -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -542,6 +580,124 @@
             pitchHistory = [];
             updatePitchHistoryUI();
         }
+
+        // 投球割合の円グラフを描画・表示する関数
+        function showPitchRatioModal() {
+            const modal = document.getElementById('pitch-ratio-modal');
+            const canvas = document.getElementById('ratio-chart');
+            const ctx = canvas.getContext('2d');
+            const legendContainer = document.getElementById('ratio-legend');
+            const totalCountEl = document.getElementById('ratio-total-count');
+
+            modal.classList.remove('hidden');
+
+            // 集計
+            const counts = {};
+            let total = 0;
+            pitchHistory.forEach(p => {
+                counts[p.type] = (counts[p.type] || 0) + 1;
+                total++;
+            });
+
+            totalCountEl.innerText = total;
+
+            // 描画クリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            legendContainer.innerHTML = '';
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 10;
+
+            if (total === 0) {
+                ctx.fillStyle = '#4b5563'; // Tailwind gray-600
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.fillStyle = '#9ca3af'; // Tailwind gray-400
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 18px Inter';
+                ctx.fillText('NO DATA', centerX, centerY);
+                return;
+            }
+
+            let startAngle = -Math.PI / 2; // 12時の方向から開始
+
+            // 数が多い順にソートして描画
+            Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach(type => {
+                const count = counts[type];
+                const ratio = count / total;
+                const sliceAngle = ratio * 2 * Math.PI;
+                const pType = PITCH_TYPES[type];
+                const colorHex = '#' + pType.color.toString(16).padStart(6, '0');
+
+                // 円弧の描画
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colorHex;
+                ctx.fill();
+                
+                // 境界線
+                ctx.strokeStyle = '#1e293b'; // Tailwind slate-800
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // パーセンテージのテキスト描画
+                const percent = Math.round(ratio * 100);
+                if (ratio >= 0.05) { // 5%以上の場合のみテキスト表示
+                    const textAngle = startAngle + sliceAngle / 2;
+                    const textRadius = radius * 0.65;
+                    const textX = centerX + Math.cos(textAngle) * textRadius;
+                    const textY = centerY + Math.sin(textAngle) * textRadius;
+                    
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = '900 16px Inter';
+                    
+                    // 白文字に黒のドロップシャドウで視認性を上げる
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 1;
+                    ctx.shadowOffsetY = 1;
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(percent + '%', textX, textY);
+                    
+                    // シャドウリセット
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                }
+
+                startAngle += sliceAngle;
+
+                // 凡例の追加
+                const legendItem = document.createElement('div');
+                legendItem.className = 'flex items-center gap-1.5 bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-700';
+                legendItem.innerHTML = `
+                    <span class="w-3.5 h-3.5 rounded-full inline-block shadow-sm" style="background-color: ${colorHex}; border: 1px solid rgba(255,255,255,0.3)"></span>
+                    <span class="text-gray-200 font-bold">${pType.name}</span>
+                    <span class="text-gray-400 ml-1 text-xs">${percent}% (${count}球)</span>
+                `;
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        // イベントリスナーの登録
+        document.getElementById('pitch-ratio-btn').addEventListener('click', showPitchRatioModal);
+        document.getElementById('close-ratio-btn').addEventListener('click', () => {
+            document.getElementById('pitch-ratio-modal').classList.add('hidden');
+        });
+        // モーダル外枠クリックで閉じる
+        document.getElementById('pitch-ratio-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('pitch-ratio-modal')) {
+                document.getElementById('pitch-ratio-modal').classList.add('hidden');
+            }
+        });
 
         function evaluateBatterResult(result) {
             let overrideText = result.text;
