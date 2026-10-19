@@ -59,6 +59,19 @@
         .animate-popup {
             animation: popup-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
+
+        /* カスタムスクロールバー */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body class="text-white">
@@ -76,19 +89,28 @@
         <!-- Header / View Controls -->
         <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2">
             <div class="ui-panel rounded-xl p-4">
-                <div class="flex justify-between items-start">
+                <div class="flex justify-between items-start mb-2">
                     <div>
                         <h1 class="text-xl font-bold mb-2">Pitching Simulator</h1>
-                        <p class="text-sm text-gray-300 mb-2">モード、利き腕、難易度を選択してください。</p>
+                        <p class="text-sm text-gray-300">モード、利き腕、難易度を選択してください。</p>
                     </div>
-                    <!-- 投球割合ボタン -->
-                    <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                            <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
-                        </svg>
-                        投球割合
-                    </button>
+                    <!-- 投球割合・平均球速ボタン -->
+                    <div class="flex flex-col gap-1.5 ml-4">
+                        <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
+                            </svg>
+                            投球割合
+                        </button>
+                        <button id="avg-speed-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.056-.517z"/>
+                                <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
+                            </svg>
+                            平均球速
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg mb-2 w-max flex-wrap gap-y-1">
@@ -320,6 +342,30 @@
         </div>
     </div>
 
+    <!-- 平均球速 モーダル -->
+    <div id="avg-speed-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-auto">
+        <div class="ui-panel rounded-2xl p-6 w-full max-w-md flex flex-col items-center relative shadow-2xl border border-gray-600">
+            <button id="close-speed-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854z"/>
+                </svg>
+            </button>
+            <h2 class="text-xl font-black mb-4 text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-emerald-400" viewBox="0 0 16 16">
+                    <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.056-.517z"/>
+                    <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
+                </svg>
+                平均球速
+            </h2>
+            
+            <div id="avg-speed-list" class="w-full space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Data injected via JS -->
+            </div>
+            
+            <div id="no-data-msg" class="hidden text-gray-400 font-bold mt-4">NO DATA</div>
+        </div>
+    </div>
+
     <script>
         const GRAVITY = -9.8; // 重力加速度 (m/s^2)
         let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリリースポイント (x, y, z)
@@ -360,8 +406,6 @@
 
         /**
          * Pitch Trajectory Logic の定義
-         * ax: 横方向 Magnus 加速度 (m/s^2) [正: シュート方向 / 負: スライダー方向]
-         * ay: 縦方向 Magnus 加速度 (m/s^2) [正: ライジング(重力抗力) / 負: 落下]
          */
         const PITCH_TYPES = {
             straight: { name: 'ストレート', minSpeed: 140, maxSpeed: 165, defaultSpeed: 150, color: 0xff4444, ax: 0.5,  ay: 6.0 },
@@ -406,7 +450,8 @@
             pos: new THREE.Vector3(),
             vel: new THREE.Vector3(),
             acc: new THREE.Vector3(),
-            active: false
+            active: false,
+            speed: 0 // 追加：球速を保持
         };
 
         // 投球履歴を保持する配列
@@ -509,7 +554,6 @@
             }, 1800);
         }
 
-        // 到達座標から最も近いグリッドセルを計算
         function getClosestGridCell(x, y) {
             let bestR = 2, bestC = 2;
             let minD = Infinity;
@@ -528,13 +572,12 @@
             return {r: bestR, c: bestC};
         }
 
-        // 投球履歴を追加
-        function addPitchToHistory(pitchType, r, c) {
-            pitchHistory.push({ type: pitchType, r: r, c: c });
+        // 投球履歴を追加（speed引数を追加）
+        function addPitchToHistory(pitchType, r, c, speed) {
+            pitchHistory.push({ type: pitchType, r: r, c: c, speed: speed });
             updatePitchHistoryUI();
         }
 
-        // 投球履歴のUIを更新
         function updatePitchHistoryUI() {
             const cells = document.getElementById('zone-grid').children;
             Array.from(cells).forEach(cell => {
@@ -542,7 +585,6 @@
                 markers.forEach(m => m.remove());
             });
 
-            // 現在の視点でグリッドが反転しているか確認
             const isFlipped = currentView !== 'pitcher' && currentView !== 'tv';
 
             pitchHistory.forEach((pitch, index) => {
@@ -558,7 +600,6 @@
                     marker.style.height = '14px';
                     marker.style.fontSize = '9px';
                     
-                    // セル内に複数ある場合は少しずつ右下にずらして重ねる
                     const existingCount = cell.querySelectorAll('.pitch-marker').length;
                     const offset = existingCount * 2;
                     marker.style.top = `calc(50% - 7px + ${offset}px)`;
@@ -575,13 +616,12 @@
             });
         }
 
-        // 投球履歴をクリア
         function clearPitchHistory() {
             pitchHistory = [];
             updatePitchHistoryUI();
         }
 
-        // 投球割合の円グラフを描画・表示する関数
+        // 投球割合の円グラフを描画
         function showPitchRatioModal() {
             const modal = document.getElementById('pitch-ratio-modal');
             const canvas = document.getElementById('ratio-chart');
@@ -591,7 +631,6 @@
 
             modal.classList.remove('hidden');
 
-            // 集計
             const counts = {};
             let total = 0;
             pitchHistory.forEach(p => {
@@ -601,7 +640,6 @@
 
             totalCountEl.innerText = total;
 
-            // 描画クリア
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             legendContainer.innerHTML = '';
 
@@ -610,12 +648,12 @@
             const radius = Math.min(centerX, centerY) - 10;
 
             if (total === 0) {
-                ctx.fillStyle = '#4b5563'; // Tailwind gray-600
+                ctx.fillStyle = '#4b5563'; 
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 ctx.fill();
 
-                ctx.fillStyle = '#9ca3af'; // Tailwind gray-400
+                ctx.fillStyle = '#9ca3af';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.font = 'bold 18px Inter';
@@ -623,9 +661,8 @@
                 return;
             }
 
-            let startAngle = -Math.PI / 2; // 12時の方向から開始
+            let startAngle = -Math.PI / 2;
 
-            // 数が多い順にソートして描画
             Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach(type => {
                 const count = counts[type];
                 const ratio = count / total;
@@ -633,7 +670,6 @@
                 const pType = PITCH_TYPES[type];
                 const colorHex = '#' + pType.color.toString(16).padStart(6, '0');
 
-                // 円弧の描画
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
                 ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
@@ -641,14 +677,12 @@
                 ctx.fillStyle = colorHex;
                 ctx.fill();
                 
-                // 境界線
-                ctx.strokeStyle = '#1e293b'; // Tailwind slate-800
+                ctx.strokeStyle = '#1e293b';
                 ctx.lineWidth = 3;
                 ctx.stroke();
 
-                // パーセンテージのテキスト描画
                 const percent = Math.round(ratio * 100);
-                if (ratio >= 0.05) { // 5%以上の場合のみテキスト表示
+                if (ratio >= 0.05) { 
                     const textAngle = startAngle + sliceAngle / 2;
                     const textRadius = radius * 0.65;
                     const textX = centerX + Math.cos(textAngle) * textRadius;
@@ -658,7 +692,6 @@
                     ctx.textBaseline = 'middle';
                     ctx.font = '900 16px Inter';
                     
-                    // 白文字に黒のドロップシャドウで視認性を上げる
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
                     ctx.shadowBlur = 4;
                     ctx.shadowOffsetX = 1;
@@ -666,7 +699,6 @@
                     ctx.fillStyle = 'white';
                     ctx.fillText(percent + '%', textX, textY);
                     
-                    // シャドウリセット
                     ctx.shadowColor = 'transparent';
                     ctx.shadowBlur = 0;
                     ctx.shadowOffsetX = 0;
@@ -675,7 +707,6 @@
 
                 startAngle += sliceAngle;
 
-                // 凡例の追加
                 const legendItem = document.createElement('div');
                 legendItem.className = 'flex items-center gap-1.5 bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-700';
                 legendItem.innerHTML = `
@@ -687,15 +718,97 @@
             });
         }
 
-        // イベントリスナーの登録
+        // 平均球速のリストを描画
+        function showAvgSpeedModal() {
+            const modal = document.getElementById('avg-speed-modal');
+            const listContainer = document.getElementById('avg-speed-list');
+            const noDataMsg = document.getElementById('no-data-msg');
+
+            modal.classList.remove('hidden');
+
+            const stats = {};
+            let totalPitches = 0;
+            
+            pitchHistory.forEach(p => {
+                if (!stats[p.type]) {
+                    stats[p.type] = { sum: 0, count: 0 };
+                }
+                stats[p.type].sum += p.speed;
+                stats[p.type].count += 1;
+                totalPitches++;
+            });
+
+            listContainer.innerHTML = '';
+            
+            if (totalPitches === 0) {
+                noDataMsg.classList.remove('hidden');
+                return;
+            } else {
+                noDataMsg.classList.add('hidden');
+            }
+
+            // 速度の速い順にソート
+            const sortedTypes = Object.keys(stats).sort((a, b) => {
+                return (stats[b].sum / stats[b].count) - (stats[a].sum / stats[a].count);
+            });
+
+            sortedTypes.forEach(type => {
+                const count = stats[type].count;
+                const avgSpeed = (stats[type].sum / count).toFixed(1);
+                const pType = PITCH_TYPES[type];
+                const colorHex = '#' + pType.color.toString(16).padStart(6, '0');
+                
+                // 最速170km/hとしてバーの幅を計算
+                const widthPercent = Math.min(100, Math.max(0, (avgSpeed / 170) * 100));
+
+                const item = document.createElement('div');
+                item.className = 'w-full bg-gray-800/80 p-3 rounded-xl border border-gray-700 shadow-sm transition-transform hover:scale-[1.02]';
+                item.innerHTML = `
+                    <div class="flex justify-between items-end mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full inline-block shadow-sm" style="background-color: ${colorHex}; border: 1px solid rgba(255,255,255,0.3)"></span>
+                            <span class="text-gray-200 font-bold text-sm sm:text-base">${pType.name}</span>
+                        </div>
+                        <div class="text-right flex items-baseline">
+                            <span class="text-xl sm:text-2xl font-black text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">${avgSpeed}</span>
+                            <span class="text-xs text-gray-400 ml-1">km/h</span>
+                            <span class="text-[10px] text-gray-500 ml-1">(${count}球)</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-900 rounded-full h-2.5 sm:h-3 shadow-inner overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%; background-color: ${colorHex}; box-shadow: 0 0 10px ${colorHex}90" data-target-width="${widthPercent}%"></div>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            // アニメーション用に少し遅延させて幅を適用
+            setTimeout(() => {
+                const bars = listContainer.querySelectorAll('[data-target-width]');
+                bars.forEach(bar => {
+                    bar.style.width = bar.getAttribute('data-target-width');
+                });
+            }, 50);
+        }
+
         document.getElementById('pitch-ratio-btn').addEventListener('click', showPitchRatioModal);
         document.getElementById('close-ratio-btn').addEventListener('click', () => {
             document.getElementById('pitch-ratio-modal').classList.add('hidden');
         });
-        // モーダル外枠クリックで閉じる
         document.getElementById('pitch-ratio-modal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('pitch-ratio-modal')) {
                 document.getElementById('pitch-ratio-modal').classList.add('hidden');
+            }
+        });
+
+        // 平均球速モーダル用イベント
+        document.getElementById('avg-speed-btn').addEventListener('click', showAvgSpeedModal);
+        document.getElementById('close-speed-btn').addEventListener('click', () => {
+            document.getElementById('avg-speed-modal').classList.add('hidden');
+        });
+        document.getElementById('avg-speed-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('avg-speed-modal')) {
+                document.getElementById('avg-speed-modal').classList.add('hidden');
             }
         });
 
@@ -743,7 +856,6 @@
                 result.subtext = (result.subtext ? result.subtext + ' | ' : '') + `+${runsScored}点 獲得!`;
             }
 
-            // 画面中央に判定テキスト表示
             showResultPopup(overrideText, overrideClass, result.subtext || '');
 
             updateGameStatusDisplay();
@@ -755,7 +867,6 @@
                 cpuGuessMarker.visible = true;
             }
 
-            // 打席が終了した場合は履歴をリセット
             if (isAtBatOver) {
                 setTimeout(clearPitchHistory, 2500);
             }
@@ -784,10 +895,8 @@
         cameras.pitcher.lookAt(0, 0.8, 0);
         cameras.catcher.position.set(0, 1.2, -2.5);
         cameras.catcher.lookAt(0, 1.2, 18.44);
-        
         cameras.batterRight.position.set(0.6, 1.6, -0.6);
         cameras.batterRight.lookAt(-0.15, 1.5, 18.44);
-        
         cameras.batterLeft.position.set(-0.6, 1.6, -0.6);
         cameras.batterLeft.lookAt(0.15, 1.5, 18.44);
 
@@ -876,7 +985,6 @@
         leftBox.position.set(0.85, 0.06, 0);
         scene.add(leftBox);
 
-        // Strike Zone Box
         const szGeo = new THREE.BoxGeometry(0.43, 0.6, 0.43);
         const szEdges = new THREE.EdgesGeometry(szGeo);
         const szMat = new THREE.LineBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
@@ -884,7 +992,6 @@
         strikeZone.position.set(0, 0.8, 0);
         scene.add(strikeZone);
 
-        // CPU Batter Guess Ring Marker
         const cpuGuessGeo = new THREE.RingGeometry(0.035, 0.065, 32);
         const cpuGuessMat = new THREE.MeshBasicMaterial({
             color: 0xa855f7,
@@ -933,14 +1040,12 @@
             }
         }
 
-        // Target Marker
         const markerGeo = new THREE.RingGeometry(0.03, 0.05, 16);
         const markerMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide });
         const targetMarker = new THREE.Mesh(markerGeo, markerMat);
         targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
         scene.add(targetMarker);
 
-        // Actual Arrival Point Marker
         const arrivalMarkerGeo = new THREE.SphereGeometry(0.037, 16, 16);
         const arrivalMarkerMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 });
         const arrivalMarker = new THREE.Mesh(arrivalMarkerGeo, arrivalMarkerMat);
@@ -954,7 +1059,6 @@
         scene.add(ballMesh);
         ballMesh.visible = false;
 
-        // Ball Trail
         const trailRadius = ballRadius * 0.65;
         const trailGeo = new THREE.SphereGeometry(trailRadius, 16, 16);
         const trailMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.55 });
@@ -979,10 +1083,6 @@
             }
         }
 
-        /**
-         * Pitch Trajectory Logic の初期速度計算関数
-         * 等加速度運動公式より逆算して TARGET_POINT に正確に届く初期速度ベクトルを計算
-         */
         function calculateInitialVelocity(pitchSpeedKmH, ax, ay) {
             const vz = - (pitchSpeedKmH * 1000 / 3600);
             const dz = TARGET_POINT.z - RELEASE_POINT.z;
@@ -995,9 +1095,6 @@
             return new THREE.Vector3(vx, vy, vz);
         }
 
-        /**
-         * ホームプレート通過時のストライクゾーン判定
-         */
         function checkStrike(arrivalPos, ballRadius = 0.037) {
             const minX = -0.215 - ballRadius;
             const maxX = 0.215 + ballRadius;
@@ -1021,7 +1118,6 @@
             const breakSliderValue = parseInt(document.getElementById('break-slider').value, 10);
             const breakMultiplier = breakSliderValue / 5.0; 
             
-            // 左投手のハンデ・軸反転の適用
             const sideFactor = (pitcherArm === 'left') ? -1 : 1;
             const modifiedAx = pType.ax * breakMultiplier * sideFactor;
             const modifiedAy = pType.ay * breakMultiplier;
@@ -1037,6 +1133,7 @@
             ballData.acc.set(modifiedAx, modifiedAy + GRAVITY, 0);
             
             ballData.active = true;
+            ballData.speed = pitchSpeed; // 速度を保存
             isPitching = true;
             isHitInAir = false;
             hasSwung = false;
@@ -1124,11 +1221,9 @@
 
             let specialSwingAndMiss = false;
 
-            // カット・シュート時の15%アウト向上フラグ判定
             const isCutOrShuuto = (currentPitch === 'cutter' || currentPitch === 'shuuto');
             const isOutBonusTriggered = isCutOrShuuto && (Math.random() < 0.15);
 
-            // 球速・変化量による追加アウトボーナス確率と空振りボーナス確率
             let speedSliderVal = parseInt(document.getElementById('speed-slider').value, 10);
             let breakSliderVal = parseInt(document.getElementById('break-slider').value, 10);
             let pType = PITCH_TYPES[currentPitch];
@@ -1348,7 +1443,6 @@
             else rankText = "誤審多発... 😅";
             document.getElementById('ump-rank').innerText = rankText;
 
-            // 審判モード時の判定テキスト表示
             const umpireText = userCall === 'STRIKE' ? 'ストライク！' : 'ボール！';
             const umpireClass = userCall === 'STRIKE' ? 'text-yellow-400' : 'text-green-400';
             const umpireSubText = isCorrect ? '⭕ 正解！' : '❌ 誤審！';
@@ -1416,12 +1510,11 @@
                 
                 if (ballData.pos.y < ballRadius) {
                     ballData.pos.y = ballRadius;
-                    ballData.vel.y *= -0.4; // Y方向の速度を反転・減衰（バウンド）
-                    ballData.vel.z *= 0.8;  // 摩擦で減速
+                    ballData.vel.y *= -0.4; 
+                    ballData.vel.z *= 0.8;  
                     ballData.vel.x *= 0.8;
                 }
                 
-                // ホームプレート(z=0)を通過した瞬間のストライク判定
                 if (prevZ > 0 && ballData.pos.z <= 0) {
                     arrivalPos.copy(ballData.pos);
                     isActualStrike = checkStrike(arrivalPos, 0.037);
@@ -1443,9 +1536,8 @@
                 if (isFinished) {
                     ballData.active = false;
                     
-                    // 到達位置を履歴に記録
                     const closestCell = getClosestGridCell(arrivalPos.x, arrivalPos.y);
-                    addPitchToHistory(currentPitch, closestCell.r, closestCell.c);
+                    addPitchToHistory(currentPitch, closestCell.r, closestCell.c, ballData.speed); // 速度を追加
                     
                     if (currentMode === 'batter') {
                         if (!hasSwung) {
@@ -1466,7 +1558,7 @@
                         }, 2000);
 
                     } else if (currentMode === 'umpire') {
-                        // 審判判定を待機
+                        
                     } else {
                         strikeZone.visible = true;
                         trailInstancedMesh.visible = true;
@@ -1583,7 +1675,6 @@
                     grid.style.transform = 'scaleX(-1)';
                 }
 
-                // 視点が変更された時に履歴表示も向きを更新
                 updatePitchHistoryUI();
             });
         });
@@ -1667,7 +1758,6 @@
                 
                 currentMode = e.target.dataset.mode;
                 
-                // モード変更時に履歴をクリア
                 clearPitchHistory();
                 
                 const pitcherControls = document.getElementById('pitcher-controls');
@@ -1768,7 +1858,7 @@
 
                     document.querySelector('.cam-btn[data-view="catcher"]').click();
 
-                } else { // Pitcher
+                } else { 
                     pitcherControls.classList.remove('hidden');
                     pitcherControls.classList.add('flex');
                     bsoPanel.classList.remove('hidden');
@@ -1797,6 +1887,18 @@
         });
         document.getElementById('umpire-strike-btn').addEventListener('click', () => performUmpireCall('STRIKE'));
         document.getElementById('umpire-ball-btn').addEventListener('click', () => performUmpireCall('BALL'));
+        
+        document.getElementById('result-text-toggle-btn').addEventListener('click', (e) => {
+            showResultTextEnabled = !showResultTextEnabled;
+            if (showResultTextEnabled) {
+                e.target.innerText = 'ON';
+                e.target.classList.replace('bg-gray-600', 'bg-blue-600');
+            } else {
+                e.target.innerText = 'OFF';
+                e.target.classList.replace('bg-blue-600', 'bg-gray-600');
+                document.getElementById('result-popup-container').classList.add('hidden');
+            }
+        });
 
         window.addEventListener('keydown', (e) => {
             if (currentMode === 'batter' && e.code === 'Space') {
@@ -1905,59 +2007,8 @@
         window.onload = () => {
             const rightBtn = document.querySelector('.arm-btn[data-arm="right"]');
             if (rightBtn) rightBtn.classList.add('bg-blue-600', 'text-white');
-
-            // 判定テキストON/OFF切り替えイベント
-            const resultTextToggleBtn = document.getElementById('result-text-toggle-btn');
-            if (resultTextToggleBtn) {
-                resultTextToggleBtn.addEventListener('click', (e) => {
-                    showResultTextEnabled = !showResultTextEnabled;
-                    if (showResultTextEnabled) {
-                        e.target.innerText = 'ON';
-                        e.target.className = 'px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-blue-600 text-white font-bold';
-                    } else {
-                        e.target.innerText = 'OFF';
-                        e.target.className = 'px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-gray-700 text-gray-400 font-bold';
-                        const container = document.getElementById('result-popup-container');
-                        if (container) container.classList.add('hidden');
-                    }
-                });
-            }
-            
-            updateGameStatusDisplay();
-            updateSpeedSlider(currentPitch);
             animate();
         };
-
-        const DOUBLE_CLICK_TIME = 200;
-        let lastClickTime = 0;
-
-        renderer.domElement.addEventListener('click', () => {
-            const now = Date.now();
-            if (now - lastClickTime <= DOUBLE_CLICK_TIME) {
-                resetCameraToCurrentView();
-                lastClickTime = 0;
-            } else {
-                lastClickTime = now;
-            }
-        });
-
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            
-            if (now - lastTouchEnd <= 350) {
-                e.preventDefault();
-            }
-            
-            if (now - lastTouchEnd <= DOUBLE_CLICK_TIME) {
-                if (e.target.tagName === 'CANVAS') {
-                    resetCameraToCurrentView();
-                }
-            }
-            
-            lastTouchEnd = now;
-            lastClickTime = now;
-        }, { passive: false });
 
     </script>
 </body>
