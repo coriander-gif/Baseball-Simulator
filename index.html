@@ -78,7 +78,7 @@
 
     <div id="canvas-container"></div>
 
-    <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-10">
+    <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col p-4 sm:p-6 z-10 overflow-hidden">
         
         <!-- 画面中央 判定テキストポップアップ -->
         <div id="result-popup-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none hidden z-30">
@@ -87,7 +87,7 @@
         </div>
 
         <!-- Header / View Controls -->
-        <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2">
+        <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2 flex-shrink-0">
             <div class="ui-panel rounded-xl p-4">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -97,24 +97,12 @@
                     <!-- 投球割合・平均球速・履歴削除ボタン -->
                     <div class="flex flex-col gap-1.5 ml-4">
                         <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                                <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
-                            </svg>
                             投球割合
                         </button>
                         <button id="avg-speed-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.056-.517z"/>
-                                <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
-                            </svg>
                             平均球速
                         </button>
                         <button id="clear-history-btn" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28 mt-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                            </svg>
                             履歴削除
                         </button>
                     </div>
@@ -223,20 +211,23 @@
             </div>
         </div>
 
-        <!-- Left Target Panel -->
-        <div class="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 pointer-events-auto flex flex-col items-center" id="left-target-container">
-            <div class="ui-panel rounded-xl p-3 shadow-lg">
-                <div class="text-sm font-bold text-center mb-2 text-gray-200" id="grid-title">コース指定</div>
-                <div id="zone-grid" class="grid grid-cols-5 grid-rows-5 gap-0.5 w-32 h-40 bg-gray-600 p-0.5 rounded">
-                    <!-- Cells injected via JS -->
+        <!-- 中央のスペース (Left Target Panel を配置) -->
+        <div class="flex-grow flex items-center justify-start pointer-events-none w-full my-2">
+            <!-- Left Target Panel -->
+            <div class="pointer-events-auto flex flex-col items-center" id="left-target-container">
+                <div class="ui-panel rounded-xl p-2 sm:p-3 shadow-lg">
+                    <div class="text-xs sm:text-sm font-bold text-center mb-1 sm:mb-2 text-gray-200" id="grid-title">コース指定</div>
+                    <div id="zone-grid" class="grid grid-cols-5 grid-rows-5 gap-0.5 w-24 h-32 sm:w-32 sm:h-40 bg-gray-600 p-0.5 rounded">
+                        <!-- Cells injected via JS -->
+                    </div>
                 </div>
+                <div class="text-[10px] sm:text-xs text-gray-300 mt-1 sm:mt-2 bg-black/50 px-2 py-1 rounded">赤枠: ストライクゾーン</div>
+                <div class="text-[10px] sm:text-xs text-purple-300 mt-1 bg-black/50 px-2 py-1 rounded hidden" id="cpu-guess-legend">紫リング: 打者CPU狙い</div>
             </div>
-            <div class="text-xs text-gray-300 mt-2 bg-black/50 px-2 py-1 rounded">赤枠: ストライクゾーン</div>
-            <div class="text-xs text-purple-300 mt-1 bg-black/50 px-2 py-1 rounded hidden" id="cpu-guess-legend">紫リング: 打者CPU狙い</div>
         </div>
 
         <!-- Controls -->
-        <div class="flex justify-center pointer-events-auto w-full max-w-4xl mx-auto">
+        <div class="flex justify-center pointer-events-auto w-full max-w-4xl mx-auto flex-shrink-0">
             <div class="ui-panel rounded-2xl p-4 w-full flex flex-col sm:flex-row items-center gap-4">
                 
                 <!-- 投手モード用コントロール -->
@@ -327,15 +318,9 @@
     <div id="pitch-ratio-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-auto">
         <div class="ui-panel rounded-2xl p-6 w-full max-w-md flex flex-col items-center relative shadow-2xl border border-gray-600">
             <button id="close-ratio-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854z"/>
-                </svg>
+                ✕
             </button>
             <h2 class="text-xl font-black mb-4 text-white flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-indigo-400" viewBox="0 0 16 16">
-                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                    <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5z"/>
-                </svg>
                 投球割合 (全 <span id="ratio-total-count" class="text-indigo-300">0</span> 球)
             </h2>
             
@@ -353,15 +338,9 @@
     <div id="avg-speed-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pointer-events-auto">
         <div class="ui-panel rounded-2xl p-6 w-full max-w-md flex flex-col items-center relative shadow-2xl border border-gray-600">
             <button id="close-speed-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854z"/>
-                </svg>
+                ✕
             </button>
             <h2 class="text-xl font-black mb-4 text-white flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-emerald-400" viewBox="0 0 16 16">
-                    <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.056-.517z"/>
-                    <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
-                </svg>
                 平均球速
             </h2>
             
@@ -375,7 +354,7 @@
 
     <script>
         const GRAVITY = -9.8; // 重力加速度 (m/s^2)
-        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリリースポイント (x, y, z)
+        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリースポイント (x, y, z)
         let TARGET_POINT = new THREE.Vector3(0.0, 0.8, 0.0);  // 目標通過点 (ホームプレート)
 
         // 判定テキスト表示フラグ・タイマー
@@ -458,10 +437,9 @@
             vel: new THREE.Vector3(),
             acc: new THREE.Vector3(),
             active: false,
-            speed: 0 // 球速を保持
+            speed: 0
         };
 
-        // 投球履歴を保持する配列
         let pitchHistory = [];
 
         let countB = 0;
@@ -557,7 +535,6 @@
                 countO = 0;
                 currentInning++;
                 updateGameStatusDisplay();
-                // ※打席終了・チェンジ時の自動履歴リセットを廃止しました
             }, 1800);
         }
 
@@ -579,7 +556,6 @@
             return {r: bestR, c: bestC};
         }
 
-        // 投球履歴を追加（speed引数を追加）
         function addPitchToHistory(pitchType, r, c, speed) {
             pitchHistory.push({ type: pitchType, r: r, c: c, speed: speed });
             updatePitchHistoryUI();
@@ -628,7 +604,6 @@
             updatePitchHistoryUI();
         }
 
-        // 投球割合の円グラフを描画
         function showPitchRatioModal() {
             const modal = document.getElementById('pitch-ratio-modal');
             const canvas = document.getElementById('ratio-chart');
@@ -725,7 +700,6 @@
             });
         }
 
-        // 平均球速のリストを描画
         function showAvgSpeedModal() {
             const modal = document.getElementById('avg-speed-modal');
             const listContainer = document.getElementById('avg-speed-list');
@@ -754,7 +728,6 @@
                 noDataMsg.classList.add('hidden');
             }
 
-            // 速度の速い順にソート
             const sortedTypes = Object.keys(stats).sort((a, b) => {
                 return (stats[b].sum / stats[b].count) - (stats[a].sum / stats[a].count);
             });
@@ -765,7 +738,6 @@
                 const pType = PITCH_TYPES[type];
                 const colorHex = '#' + pType.color.toString(16).padStart(6, '0');
                 
-                // 最速170km/hとしてバーの幅を計算
                 const widthPercent = Math.min(100, Math.max(0, (avgSpeed / 170) * 100));
 
                 const item = document.createElement('div');
@@ -807,7 +779,6 @@
             }
         });
 
-        // 平均球速モーダル用イベント
         document.getElementById('avg-speed-btn').addEventListener('click', showAvgSpeedModal);
         document.getElementById('close-speed-btn').addEventListener('click', () => {
             document.getElementById('avg-speed-modal').classList.add('hidden');
@@ -818,68 +789,9 @@
             }
         });
 
-        // 履歴削除ボタンイベント
         document.getElementById('clear-history-btn').addEventListener('click', () => {
             clearPitchHistory();
         });
-
-        function evaluateBatterResult(result) {
-            let overrideText = result.text;
-            let overrideClass = result.class;
-            let runsScored = 0;
-            let isAtBatOver = false;
-
-            if (result.type === 'HOMERUN' || result.type === 'HIT' || result.type === 'SINGLE' || result.type === 'DOUBLE' || result.type === 'TRIPLE') {
-                runsScored = advanceRunners(result.type);
-                resetAtBatCount();
-                isAtBatOver = true;
-            } else if (result.type === 'MISS' || result.type === 'STRIKE') {
-                countS++;
-                if (countS >= 3) {
-                    countO++;
-                    overrideText = '三振！ (STRIKE OUT!)';
-                    overrideClass = 'text-red-600 font-black';
-                    resetAtBatCount();
-                    isAtBatOver = true;
-                    if (countO >= 3) changeInning();
-                }
-            } else if (result.type === 'BALL') {
-                countB++;
-                if (countB >= 4) {
-                    overrideText = 'フォアボール！ (WALK)';
-                    overrideClass = 'text-green-400 font-black';
-                    runsScored = advanceRunners('WALK');
-                    resetAtBatCount();
-                    isAtBatOver = true;
-                }
-            } else if (result.type === 'FOUL') {
-                if (countS < 2) countS++;
-            } else if (result.type === 'PULL' || result.type === 'OPPOSITE' || result.type === 'OUT') {
-                countO++;
-                overrideText = 'アウト！ (OUT)';
-                overrideClass = 'text-red-500';
-                resetAtBatCount();
-                isAtBatOver = true;
-                if (countO >= 3) changeInning();
-            }
-
-            if (runsScored > 0) {
-                result.subtext = (result.subtext ? result.subtext + ' | ' : '') + `+${runsScored}点 獲得!`;
-            }
-
-            showResultPopup(overrideText, overrideClass, result.subtext || '');
-
-            updateGameStatusDisplay();
-
-            strikeZone.visible = true;
-            trailInstancedMesh.visible = true;
-            targetMarker.visible = true;
-            if (currentMode === 'catcher') {
-                cpuGuessMarker.visible = true;
-            }
-
-            // ※打席終了時の自動履歴リセットを廃止しました
-        }
 
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -967,7 +879,6 @@
         rubber.position.set(0, 0.26, 18.44);
         scene.add(rubber);
 
-        // Home Plate
         const plateShape = new THREE.Shape();
         plateShape.moveTo(-0.215, 0);
         plateShape.lineTo(0.215, 0);
@@ -1142,7 +1053,7 @@
             ballData.acc.set(modifiedAx, modifiedAy + GRAVITY, 0);
             
             ballData.active = true;
-            ballData.speed = pitchSpeed; // 速度を保存
+            ballData.speed = pitchSpeed;
             isPitching = true;
             isHitInAir = false;
             hasSwung = false;
@@ -1181,6 +1092,62 @@
             trailInstancedMesh.count = 0;
             
             clock.start();
+        }
+
+        function evaluateBatterResult(result) {
+            let overrideText = result.text;
+            let overrideClass = result.class;
+            let runsScored = 0;
+            let isAtBatOver = false;
+
+            if (result.type === 'HOMERUN' || result.type === 'HIT' || result.type === 'SINGLE' || result.type === 'DOUBLE' || result.type === 'TRIPLE') {
+                runsScored = advanceRunners(result.type);
+                resetAtBatCount();
+                isAtBatOver = true;
+            } else if (result.type === 'MISS' || result.type === 'STRIKE') {
+                countS++;
+                if (countS >= 3) {
+                    countO++;
+                    overrideText = '三振！ (STRIKE OUT!)';
+                    overrideClass = 'text-red-600 font-black';
+                    resetAtBatCount();
+                    isAtBatOver = true;
+                    if (countO >= 3) changeInning();
+                }
+            } else if (result.type === 'BALL') {
+                countB++;
+                if (countB >= 4) {
+                    overrideText = 'フォアボール！ (WALK)';
+                    overrideClass = 'text-green-400 font-black';
+                    runsScored = advanceRunners('WALK');
+                    resetAtBatCount();
+                    isAtBatOver = true;
+                }
+            } else if (result.type === 'FOUL') {
+                if (countS < 2) countS++;
+            } else if (result.type === 'PULL' || result.type === 'OPPOSITE' || result.type === 'OUT') {
+                countO++;
+                overrideText = 'アウト！ (OUT)';
+                overrideClass = 'text-red-500';
+                resetAtBatCount();
+                isAtBatOver = true;
+                if (countO >= 3) changeInning();
+            }
+
+            if (runsScored > 0) {
+                result.subtext = (result.subtext ? result.subtext + ' | ' : '') + `+${runsScored}点 獲得!`;
+            }
+
+            showResultPopup(overrideText, overrideClass, result.subtext || '');
+
+            updateGameStatusDisplay();
+
+            strikeZone.visible = true;
+            trailInstancedMesh.visible = true;
+            targetMarker.visible = true;
+            if (currentMode === 'catcher') {
+                cpuGuessMarker.visible = true;
+            }
         }
 
         function performSwing() {
@@ -1485,7 +1452,6 @@
                     document.getElementById('ump-correct-count').innerText = "0";
                     document.getElementById('ump-accuracy').innerText = "100 %";
                     document.getElementById('ump-rank').innerText = "判定待ち";
-                    // ※審判モード10球終了時の自動履歴リセットを廃止しました
                 }, 2000);
             }
         }
@@ -1546,7 +1512,7 @@
                     ballData.active = false;
                     
                     const closestCell = getClosestGridCell(arrivalPos.x, arrivalPos.y);
-                    addPitchToHistory(currentPitch, closestCell.r, closestCell.c, ballData.speed); // 速度を追加
+                    addPitchToHistory(currentPitch, closestCell.r, closestCell.c, ballData.speed);
                     
                     if (currentMode === 'batter') {
                         if (!hasSwung) {
@@ -1567,7 +1533,7 @@
                         }, 2000);
 
                     } else if (currentMode === 'umpire') {
-                        
+                        // 審判モードは手動判定
                     } else {
                         strikeZone.visible = true;
                         trailInstancedMesh.visible = true;
@@ -1724,112 +1690,34 @@
                         Array.from(gridContainer.children).forEach(child => child.classList.remove('ring-4', 'ring-yellow-400', 'z-10'));
                         this.classList.add('ring-4', 'ring-yellow-400', 'z-10');
                         batterGuess = { r: row, c: col };
-                    } else if (currentMode === 'catcher') {
-                        Array.from(gridContainer.children).forEach(child => child.classList.remove('ring-2', 'ring-blue-400', 'z-10'));
-                        this.classList.add('ring-2', 'ring-blue-400', 'z-10');
-
-                        catcherTarget = { r: row, c: col };
-                        TARGET_POINT.x = parseFloat(this.dataset.x);
-                        TARGET_POINT.y = parseFloat(this.dataset.y);
-                        targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
+                        targetMarker.position.set(xValues[col], yValues[row], TARGET_POINT.z);
                     } else if (currentMode === 'pitcher') {
-                        Array.from(gridContainer.children).forEach(child => child.classList.remove('ring-2', 'ring-blue-400', 'z-10'));
-                        this.classList.add('ring-2', 'ring-blue-400', 'z-10');
-                        
-                        TARGET_POINT.x = parseFloat(this.dataset.x);
-                        TARGET_POINT.y = parseFloat(this.dataset.y);
+                        Array.from(gridContainer.children).forEach(child => child.classList.remove('ring-4', 'ring-blue-400', 'z-10'));
+                        this.classList.add('ring-4', 'ring-blue-400', 'z-10');
+                        TARGET_POINT.x = xValues[col];
+                        TARGET_POINT.y = yValues[row];
+                        targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
+                    } else if (currentMode === 'catcher') {
+                        Array.from(gridContainer.children).forEach(child => child.classList.remove('ring-4', 'ring-blue-400', 'z-10'));
+                        this.classList.add('ring-4', 'ring-blue-400', 'z-10');
+                        catcherTarget = { r: row, c: col };
+                        TARGET_POINT.x = xValues[col];
+                        TARGET_POINT.y = yValues[row];
                         targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
                     }
                 });
-                
                 gridContainer.appendChild(cell);
             }
         }
 
-        document.getElementById('break-slider').addEventListener('input', function() {
-            document.getElementById('break-value-display').innerText = this.value;
-        });
-        
-        document.getElementById('speed-slider').addEventListener('input', function() {
-            document.getElementById('speed-value-display').innerText = this.value;
-        });
-
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (isPitching) return;
-                
-                document.querySelectorAll('.mode-btn').forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white');
-                    b.classList.add('text-gray-300');
-                });
-                e.target.classList.remove('text-gray-300');
-                e.target.classList.add('bg-blue-600', 'text-white');
-                
-                currentMode = e.target.dataset.mode;
-                
-                // コントロールパネルの切り替え
-                document.getElementById('pitcher-controls').classList.add('hidden');
-                document.getElementById('catcher-controls').classList.add('hidden');
-                document.getElementById('batter-controls').classList.add('hidden');
-                document.getElementById('umpire-controls').classList.add('hidden');
-                
-                document.getElementById('bso-panel').classList.add('hidden');
-                document.getElementById('umpire-stats-panel').classList.add('hidden');
-                document.getElementById('stats-panel').classList.remove('hidden');
-
-                if (currentMode === 'pitcher') {
-                    document.getElementById('pitcher-controls').classList.remove('hidden');
-                    document.getElementById('pitcher-controls').classList.add('flex');
-                    document.querySelector('.cam-btn[data-view="pitcher"]').click();
-                    document.getElementById('grid-title').innerText = "コース指定";
-                    document.getElementById('cpu-guess-legend').classList.add('hidden');
-                } else if (currentMode === 'catcher') {
-                    document.getElementById('catcher-controls').classList.remove('hidden');
-                    document.getElementById('catcher-controls').classList.add('flex');
-                    document.querySelector('.cam-btn[data-view="catcher"]').click();
-                    document.getElementById('bso-panel').classList.remove('hidden');
-                    document.getElementById('grid-title').innerText = "要求コース";
-                    document.getElementById('cpu-guess-legend').classList.remove('hidden');
-                    resetAllCounts();
-                } else if (currentMode === 'batter') {
-                    document.getElementById('batter-controls').classList.remove('hidden');
-                    document.getElementById('batter-controls').classList.add('flex');
-                    document.querySelector('.cam-btn[data-view="batterRight"]').click();
-                    document.getElementById('bso-panel').classList.remove('hidden');
-                    document.getElementById('grid-title').innerText = "狙い目";
-                    document.getElementById('cpu-guess-legend').classList.add('hidden');
-                    resetAllCounts();
-                } else if (currentMode === 'umpire') {
-                    document.getElementById('umpire-controls').classList.remove('hidden');
-                    document.getElementById('umpire-controls').classList.add('flex');
-                    document.querySelector('.cam-btn[data-view="catcher"]').click();
-                    document.getElementById('umpire-stats-panel').classList.remove('hidden');
-                    document.getElementById('stats-panel').classList.add('hidden');
-                    document.getElementById('grid-title').innerText = "コース確認";
-                    document.getElementById('cpu-guess-legend').classList.add('hidden');
-                    umpireTotalPitches = 0;
-                    umpireCorrectCount = 0;
-                    document.getElementById('ump-ball-count').innerText = "0 / 10";
-                    document.getElementById('ump-correct-count').innerText = "0";
-                    document.getElementById('ump-accuracy').innerText = "100 %";
-                    document.getElementById('ump-rank').innerText = "判定待ち";
-                    // ※モード切替時の自動履歴リセットを廃止しました
-                }
-            });
-        });
-
-        // 投手・捕手モード ボタンイベント
         document.getElementById('throw-btn').addEventListener('click', throwPitch);
-        document.getElementById('catcher-sign-btn').addEventListener('click', () => {
-            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
-            throwPitch();
-        });
-
-        // 打者モード用 CPU投球
+        document.getElementById('catcher-sign-btn').addEventListener('click', throwPitch);
+        
         document.getElementById('cpu-throw-btn').addEventListener('click', () => {
-            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
+            if (isPitching) return;
+            const pitches = Object.keys(PITCH_TYPES);
+            currentPitch = pitches[Math.floor(Math.random() * pitches.length)];
             
-            // CPU Target
             cpuTarget.r = Math.floor(Math.random() * 5);
             cpuTarget.c = Math.floor(Math.random() * 5);
             TARGET_POINT.x = xValues[cpuTarget.c];
@@ -1840,15 +1728,29 @@
         });
 
         document.getElementById('swing-btn').addEventListener('click', performSwing);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && currentMode === 'batter') {
+                performSwing();
+            }
+            if (currentMode === 'umpire' && isPitching && !hasJudgedCurrentPitch) {
+                if (e.code === 'KeyS' || e.code === 'ArrowRight') {
+                    performUmpireCall('STRIKE');
+                } else if (e.code === 'KeyB' || e.code === 'ArrowLeft') {
+                    performUmpireCall('BALL');
+                }
+            }
+        });
 
-        // 審判モード ボタンイベント
         document.getElementById('umpire-throw-btn').addEventListener('click', () => {
-            currentPitch = ['straight', 'curve', 'slider', 'cutter', 'shuuto', 'fork', 'changeup'][Math.floor(Math.random() * 7)];
+            if (isPitching) return;
+            const pitches = Object.keys(PITCH_TYPES);
+            currentPitch = pitches[Math.floor(Math.random() * pitches.length)];
             
-            let targetR = Math.floor(Math.random() * 5);
-            let targetC = Math.floor(Math.random() * 5);
-            TARGET_POINT.x = xValues[targetC];
-            TARGET_POINT.y = yValues[targetR];
+            const r = Math.floor(Math.random() * 5);
+            const c = Math.floor(Math.random() * 5);
+            TARGET_POINT.x = xValues[c];
+            TARGET_POINT.y = yValues[r];
             targetMarker.position.set(TARGET_POINT.x, TARGET_POINT.y, TARGET_POINT.z);
             
             throwPitch();
@@ -1857,17 +1759,77 @@
         document.getElementById('umpire-strike-btn').addEventListener('click', () => performUmpireCall('STRIKE'));
         document.getElementById('umpire-ball-btn').addEventListener('click', () => performUmpireCall('BALL'));
 
-        // Keyboard inputs
-        window.addEventListener('keydown', (e) => {
-            if (currentMode === 'batter' && (e.code === 'Space' || e.code === 'Enter')) {
-                performSwing();
-            } else if (currentMode === 'umpire') {
-                if (e.key === 's' || e.key === 'S' || e.key === 'ArrowRight') {
-                    performUmpireCall('STRIKE');
-                } else if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') {
-                    performUmpireCall('BALL');
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            document.getElementById('speed-value-display').innerText = e.target.value;
+        });
+        document.getElementById('break-slider').addEventListener('input', (e) => {
+            document.getElementById('break-value-display').innerText = e.target.value;
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white');
+                    b.classList.add('text-gray-300');
+                });
+                e.target.classList.add('bg-blue-600', 'text-white');
+                e.target.classList.remove('text-gray-300');
+                
+                currentMode = e.target.dataset.mode;
+                
+                document.getElementById('pitcher-controls').classList.add('hidden');
+                document.getElementById('catcher-controls').classList.add('hidden');
+                document.getElementById('batter-controls').classList.add('hidden');
+                document.getElementById('umpire-controls').classList.add('hidden');
+                
+                document.getElementById('pitcher-controls').classList.remove('flex');
+                document.getElementById('catcher-controls').classList.remove('flex');
+                document.getElementById('batter-controls').classList.remove('flex');
+                document.getElementById('umpire-controls').classList.remove('flex');
+
+                document.getElementById('bso-panel').classList.add('hidden');
+                document.getElementById('umpire-stats-panel').classList.add('hidden');
+                document.getElementById('cpu-guess-legend').classList.add('hidden');
+                
+                batGroup.visible = false;
+                
+                const uiCamBtns = document.querySelectorAll('.cam-btn');
+                
+                if (currentMode === 'pitcher') {
+                    document.getElementById('pitcher-controls').classList.remove('hidden');
+                    document.getElementById('pitcher-controls').classList.add('flex');
+                    uiCamBtns.forEach(b => { if(b.dataset.view==='pitcher') b.click(); });
+                } else if (currentMode === 'catcher') {
+                    document.getElementById('catcher-controls').classList.remove('hidden');
+                    document.getElementById('catcher-controls').classList.add('flex');
+                    document.getElementById('bso-panel').classList.remove('hidden');
+                    document.getElementById('cpu-guess-legend').classList.remove('hidden');
+                    resetAllCounts();
+                    uiCamBtns.forEach(b => { if(b.dataset.view==='catcher') b.click(); });
+                } else if (currentMode === 'batter') {
+                    document.getElementById('batter-controls').classList.remove('hidden');
+                    document.getElementById('batter-controls').classList.add('flex');
+                    document.getElementById('bso-panel').classList.remove('hidden');
+                    resetAllCounts();
+                    
+                    const cells = document.getElementById('zone-grid').children;
+                    Array.from(cells).forEach(child => {
+                        child.classList.remove('ring-4', 'ring-blue-400', 'z-10');
+                        if(child.dataset.isStrike === 'true' && parseInt(child.dataset.r)===2 && parseInt(child.dataset.c)===2){
+                            child.classList.add('ring-4', 'ring-yellow-400', 'z-10');
+                        }
+                    });
+                    batterGuess = {r: 2, c: 2};
+                    targetMarker.position.set(xValues[2], yValues[2], TARGET_POINT.z);
+                    
+                    uiCamBtns.forEach(b => { if(b.dataset.view==='batterRight') b.click(); });
+                } else if (currentMode === 'umpire') {
+                    document.getElementById('umpire-controls').classList.remove('hidden');
+                    document.getElementById('umpire-controls').classList.add('flex');
+                    document.getElementById('umpire-stats-panel').classList.remove('hidden');
+                    uiCamBtns.forEach(b => { if(b.dataset.view==='catcher') b.click(); });
                 }
-            }
+            });
         });
 
         document.getElementById('result-text-toggle-btn').addEventListener('click', (e) => {
@@ -1881,27 +1843,19 @@
             }
         });
 
-        // Resize handler
         window.addEventListener('resize', () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            renderer.setSize(width, height);
-            
             Object.values(cameras).forEach(cam => {
-                cam.aspect = width / height;
+                cam.aspect = window.innerWidth / window.innerHeight;
                 cam.updateProjectionMatrix();
             });
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start
-        updateSpeedSlider(currentPitch);
-        document.querySelector('.mode-btn[data-mode="pitcher"]').click();
-        
-        // Start animation loop
-        window.onload = function () {
+        window.onload = function() {
+            updateSpeedSlider(currentPitch);
+            resetAllCounts();
             animate();
         };
-
     </script>
 </body>
 </html>
