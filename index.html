@@ -442,6 +442,7 @@
         };
 
         let pitchHistory = [];
+        let displayStartIndex = 0; // 表示用履歴の開始インデックス
 
         let countB = 0;
         let countS = 0;
@@ -569,9 +570,15 @@
                 markers.forEach(m => m.remove());
             });
 
+            // 審判モードの場合は履歴マーカー（◯）を描写しない
+            if (currentMode === 'umpire') return;
+
             const isFlipped = currentView !== 'pitcher' && currentView !== 'tv';
 
-            pitchHistory.forEach((pitch, index) => {
+            // 表示対象の履歴のみ取得（一打席終わった場合にリセットされるように）
+            const displayHistory = pitchHistory.slice(displayStartIndex);
+
+            displayHistory.forEach((pitch, index) => {
                 const cell = Array.from(cells).find(c => parseInt(c.dataset.r) === pitch.r && parseInt(c.dataset.c) === pitch.c);
                 if (cell) {
                     const marker = document.createElement('div');
@@ -602,6 +609,7 @@
 
         function clearPitchHistory() {
             pitchHistory = [];
+            displayStartIndex = 0;
             updatePitchHistoryUI();
         }
 
@@ -1148,6 +1156,16 @@
             targetMarker.visible = true;
             if (currentMode === 'catcher') {
                 cpuGuessMarker.visible = true;
+            }
+
+            // 打席が終了した場合、表示用履歴インデックスを進めてUI更新を予約
+            if (isAtBatOver) {
+                if (currentMode === 'catcher' || currentMode === 'batter') {
+                    setTimeout(() => {
+                        displayStartIndex = pitchHistory.length;
+                        updatePitchHistoryUI();
+                    }, 2000); // リザルト表示が消えるタイミングでリセット
+                }
             }
         }
 
@@ -1869,6 +1887,9 @@
                     document.getElementById('umpire-stats-panel').classList.remove('hidden');
                     uiCamBtns.forEach(b => { if(b.dataset.view==='catcher') b.click(); });
                 }
+
+                // モード切替時に投球履歴のUIを更新する
+                updatePitchHistoryUI();
             });
         });
 
