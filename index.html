@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>本格ピッチングシミュレータ</title>
+    <title>本格野球シミュレータ</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D rendering -->
@@ -1109,7 +1109,7 @@
                 countS++;
                 if (countS >= 3) {
                     countO++;
-                    overrideText = '三振！ (STRIKE OUT!)';
+                    overrideText = '三振 (STRIKE OUT!)';
                     overrideClass = 'text-red-600 font-black';
                     resetAtBatCount();
                     isAtBatOver = true;
@@ -1118,7 +1118,7 @@
             } else if (result.type === 'BALL') {
                 countB++;
                 if (countB >= 4) {
-                    overrideText = 'フォアボール！ (WALK)';
+                    overrideText = 'フォアボール (WALK)';
                     overrideClass = 'text-green-400 font-black';
                     runsScored = advanceRunners('WALK');
                     resetAtBatCount();
@@ -1128,7 +1128,7 @@
                 if (countS < 2) countS++;
             } else if (result.type === 'PULL' || result.type === 'OPPOSITE' || result.type === 'OUT') {
                 countO++;
-                overrideText = 'アウト！ (OUT)';
+                overrideText = 'アウト (OUT)';
                 overrideClass = 'text-red-500';
                 resetAtBatCount();
                 isAtBatOver = true;
@@ -1205,14 +1205,8 @@
             let speedRatio = (speedSliderVal - pType.minSpeed) / (pType.maxSpeed - pType.minSpeed);
             if (speedRatio < 0) speedRatio = 0;
             if (speedRatio > 1) speedRatio = 1;
-            let breakRatio = breakSliderVal / 10.0; // 0.1 〜 1.0
-
-            // 球速・変化量の上昇によるアウト確率上昇ボーナス (最大+40%)
-            const totalOutBonus = (speedRatio * 0.18) + (breakRatio * 0.22); 
-
-            // 変化量に応じた空振りボーナス (大きな変化量で空振り補正+45%)
-            const missBonus = Math.pow(breakRatio, 1.2) * 0.45;
-
+            let breakRatio = breakSliderVal / 10.0; // 0.1 〜 1.0 
+            
             // ボール球に対する空振り判定
             if (!isActualStrike) {
                 const randVal = Math.random();
@@ -1281,7 +1275,7 @@
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
                     resultType = 'MISS';
-                    resultText = '空振り！';
+                    resultText = '空振り';
                     resultClass = 'text-red-400';
                 } else if (dr === 0 && dc === 0) {
                     // 打者の狙い通りのコース
