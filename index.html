@@ -998,7 +998,11 @@
 
         function getPitchSpeed(pType) {
             if (currentMode === 'pitcher' || currentMode === 'catcher') {
-                return parseInt(document.getElementById('speed-slider').value, 10);
+                let baseSpeed = parseInt(document.getElementById('speed-slider').value, 10);
+                // 投手モード・捕手モードで、設定した球速の+-3km/hを乱数で決定する仕様を追加
+                let variation = Math.floor(Math.random() * 7) - 3; // -3 ~ +3
+                let finalSpeed = baseSpeed + variation;
+                return Math.max(pType.minSpeed, Math.min(pType.maxSpeed + 3, finalSpeed));
             } else {
                 let baseSpeed = pType.defaultSpeed;
                 if (currentDifficulty === 'easy') {
@@ -1216,6 +1220,18 @@
 
             let specialSwingAndMiss = false;
 
+            // 捕手モードの場合、同じ球種を続けたらCPUに打たれやすくなる仕様を追加
+            let samePitchCount = 0;
+            for (let i = pitchHistory.length - 1; i >= 0; i--) {
+                if (pitchHistory[i].type === currentPitch) {
+                    samePitchCount++;
+                } else {
+                    break;
+                }
+            }
+            // 連続して同じ球種を投げるほどペナルティ（打たれやすくなる）
+            let consecutivePitchPenalty = samePitchCount * 0.15;
+
             // スライダー値からの割合算出 (球速・変化量)
             let speedSliderVal = parseInt(document.getElementById('speed-slider').value, 10);
             let breakSliderVal = parseInt(document.getElementById('break-slider').value, 10);
@@ -1225,14 +1241,14 @@
             if (speedRatio > 1) speedRatio = 1;
             let breakRatio = breakSliderVal / 10.0; // 0.1 〜 1.0
 
-            // カット・シュートの強力すぎる打者デバフを緩和（アウト確率・空振り確率のボーナスを調整）
-            let totalOutBonus = (speedRatio * 0.15) + (breakRatio * 0.15); 
-            let missBonus = Math.pow(breakRatio, 1.2) * 0.30;
+            // 捕手モードの場合、速度と変化量で少しずつ強くなる仕様の変わり幅をとても小さく変更
+            let totalOutBonus = (speedRatio * 0.02) + (breakRatio * 0.02); 
+            let missBonus = Math.pow(breakRatio, 1.2) * 0.05;
 
-            // カットとシュートの場合のボーナス上限をさらに低く（強すぎないように調整）
+            // カット・シュートの強力すぎる打者デバフを緩和（アウト確率・空振り確率のボーナスを調整）
             if (currentPitch === 'cutter' || currentPitch === 'shuuto') {
-                totalOutBonus *= 0.5; // アウト成功補正を半減
-                missBonus *= 0.4;     // 空振り補正を大幅低下
+                totalOutBonus *= 0.5; // アウト成功補正をさらに半減
+                missBonus *= 0.4;     // 空振り補正をさらに低下
             }
 
             // ボール球に対する空振り判定
@@ -1240,32 +1256,27 @@
                 const randVal = Math.random();
                 
                 if (currentPitch === 'straight') {
-                    // ストレート：高めボール球（ノビ・球速・変化量で空振り率上昇）
                     if (arrivalPos.y > 1.05) {
-                        const straightMissProb = 0.15 + missBonus + (speedRatio * 0.15);
+                        const straightMissProb = 0.15 + missBonus + (speedRatio * 0.02);
                         if (randVal < straightMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'slider') {
-                    // スライダー：外角・大きく逃げるボール球で空振り率上昇
                     const isEscaping = (Math.abs(arrivalPos.x) > 0.215);
                     if (isEscaping) {
                         const sliderMissProb = 0.20 + missBonus;
                         if (randVal < sliderMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'fork') {
-                    // フォーク：低めに落ちるボール球で落差（変化量）に応じた空振り率上昇
                     if (arrivalPos.y < 0.55) {
                         const forkMissProb = 0.25 + missBonus;
                         if (randVal < forkMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'changeup') {
-                    // チェンジアップ：低め・緩急ボール球で空振り率上昇
                     if (arrivalPos.y < 0.60) {
                         const changeupMissProb = 0.20 + missBonus;
                         if (randVal < changeupMissProb) specialSwingAndMiss = true;
                     }
                 } else {
-                    // その他の変化球（カットボール・シュート等：空振り率を抑えめ（約5%〜10%）に調整）
                     if (randVal < 0.05 + missBonus * 0.2) {
                         specialSwingAndMiss = true;
                     }
@@ -1276,19 +1287,22 @@
                 }
             }
 
-            // ストライクゾーン内での空振り率計算
+            // 捕手モードの場合、変化量に伴ってストライクゾーン内での空振り率を上げる仕様の変わり幅をとても小さく変更
             let strikeMissProb = 0;
             if (isActualStrike) {
                 if (['straight', 'slider', 'fork', 'changeup'].includes(currentPitch)) {
                     if (dr > 0 || dc > 0) {
-                        strikeMissProb = (breakRatio * 0.20) + (speedRatio * 0.10);
+                        strikeMissProb = (breakRatio * 0.03) + (speedRatio * 0.01); // 変わり幅をとても小さく
                     } else {
-                        strikeMissProb = (breakRatio >= 0.8) ? 0.15 : 0.05;
+                        strikeMissProb = (breakRatio >= 0.8) ? 0.06 : 0.05; // 変わり幅をとても小さく
                     }
                 } else if (currentPitch === 'cutter' || currentPitch === 'shuuto') {
-                    // カット・シュートはストライクゾーン内で空振りしにくくし、打たせて取る（凡打増）挙動へ調整
-                    strikeMissProb = (breakRatio >= 0.8) ? 0.05 : 0.02;
+                    strikeMissProb = (breakRatio >= 0.8) ? 0.03 : 0.02; // 変わり幅をとても小さく
                 }
+
+                // 連続球種ペナルティで空振り率減少
+                strikeMissProb -= consecutivePitchPenalty * 0.05;
+                if (strikeMissProb < 0) strikeMissProb = 0;
             }
 
             if (specialSwingAndMiss) {
@@ -1300,7 +1314,6 @@
             } else if (isActualStrike) {
                 const strikeRand = Math.random();
 
-                // 高変化量・ズレによるストライクゾーン内の空振り
                 if (strikeRand < strikeMissProb) {
                     hasSwung = true;
                     isSwingingAnim = true;
@@ -1314,15 +1327,18 @@
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
                     
-                    // 球速と変化量が上がるほど、打たれても詰まらせて「アウト」にできる確率が上昇
-                    const outChance = 0.10 + totalOutBonus; 
+                    // 連続球種による打たれやすさペナルティを適用
+                    let outChance = 0.10 + totalOutBonus - consecutivePitchPenalty; 
+                    if (outChance < 0) outChance = 0;
+
                     if (Math.random() < outChance) {
                         resultType = 'OUT';
                         resultText = '詰まらせた！(アウト)';
                         resultClass = 'text-red-500';
                         applyHitTrajectory('PULL');
                     } else {
-                        const rand = Math.random();
+                        // ペナルティを乱数に加えて、長打が出やすくする
+                        const rand = Math.random() + (consecutivePitchPenalty * 0.3);
                         if (rand < 0.55) {
                             resultType = 'SINGLE';
                             resultText = '1ベースヒット！';
@@ -1351,8 +1367,9 @@
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
 
-                    // 球速・変化量が上がると打ち取り率・ファウル/空振り率がアップ
-                    const outChance = 0.30 + totalOutBonus * 0.6;
+                    let outChance = 0.30 + totalOutBonus * 0.6 - consecutivePitchPenalty;
+                    if (outChance < 0) outChance = 0;
+
                     if (Math.random() < outChance) {
                         resultType = 'OUT';
                         resultText = '打ち取った！(アウト)';
@@ -1360,7 +1377,8 @@
                         applyHitTrajectory('PULL');
                     } else {
                         const rand = Math.random();
-                        if (rand < 0.50) {
+                        // 捕手モードの場合、CPUが打つファウルの確率を高める (50% -> 85%)
+                        if (rand < 0.85) {
                             resultType = 'FOUL';
                             resultText = 'ファウル！';
                             resultClass = 'text-yellow-400';
@@ -1912,18 +1930,22 @@
         });
 
         window.addEventListener('resize', () => {
-            Object.values(cameras).forEach(cam => {
-                cam.aspect = window.innerWidth / window.innerHeight;
-                cam.updateProjectionMatrix();
-            });
+            cameras.tv.aspect = window.innerWidth / window.innerHeight;
+            cameras.tv.updateProjectionMatrix();
+            cameras.pitcher.aspect = window.innerWidth / window.innerHeight;
+            cameras.pitcher.updateProjectionMatrix();
+            cameras.catcher.aspect = window.innerWidth / window.innerHeight;
+            cameras.catcher.updateProjectionMatrix();
+            cameras.batterRight.aspect = window.innerWidth / window.innerHeight;
+            cameras.batterRight.updateProjectionMatrix();
+            cameras.batterLeft.aspect = window.innerWidth / window.innerHeight;
+            cameras.batterLeft.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        window.onload = function() {
-            updateSpeedSlider(currentPitch);
-            resetAllCounts();
-            animate();
-        };
+        resetCameraToCurrentView();
+        updateGameStatusDisplay();
+        animate();
     </script>
 </body>
 </html>
