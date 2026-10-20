@@ -355,7 +355,7 @@
 
     <script>
         const GRAVITY = -9.8; // 重力加速度 (m/s^2)
-        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリースポイント (x, y, z)
+        let RELEASE_POINT = new THREE.Vector3(0.5, 1.8, 18.44); // リリリースポイント (x, y, z)
         let TARGET_POINT = new THREE.Vector3(0.0, 0.8, 0.0);  // 目標通過点 (ホームプレート)
 
         // 判定テキスト表示フラグ・タイマー
@@ -1225,44 +1225,48 @@
             if (speedRatio > 1) speedRatio = 1;
             let breakRatio = breakSliderVal / 10.0; // 0.1 〜 1.0
 
-            // 球速・変化量の上昇によるアウト確率上昇ボーナス (最大+40%)
-            const totalOutBonus = (speedRatio * 0.18) + (breakRatio * 0.22); 
+            // カット・シュートの強力すぎる打者デバフを緩和（アウト確率・空振り確率のボーナスを調整）
+            let totalOutBonus = (speedRatio * 0.15) + (breakRatio * 0.15); 
+            let missBonus = Math.pow(breakRatio, 1.2) * 0.30;
 
-            // 変化量に応じた空振りボーナス (大きな変化量で空振り補正+45%)
-            const missBonus = Math.pow(breakRatio, 1.2) * 0.45;
+            // カットとシュートの場合のボーナス上限をさらに低く（強すぎないように調整）
+            if (currentPitch === 'cutter' || currentPitch === 'shuuto') {
+                totalOutBonus *= 0.5; // アウト成功補正を半減
+                missBonus *= 0.4;     // 空振り補正を大幅低下
+            }
 
             // ボール球に対する空振り判定
             if (!isActualStrike) {
                 const randVal = Math.random();
                 
                 if (currentPitch === 'straight') {
-                    // ストレート：高めボール球（ノビ・球速・変化量で空振り率大幅上昇）
+                    // ストレート：高めボール球（ノビ・球速・変化量で空振り率上昇）
                     if (arrivalPos.y > 1.05) {
-                        const straightMissProb = 0.20 + missBonus + (speedRatio * 0.20);
+                        const straightMissProb = 0.15 + missBonus + (speedRatio * 0.15);
                         if (randVal < straightMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'slider') {
-                    // スライダー：外角・大きく逃げるボール球で空振り率大幅上昇
+                    // スライダー：外角・大きく逃げるボール球で空振り率上昇
                     const isEscaping = (Math.abs(arrivalPos.x) > 0.215);
                     if (isEscaping) {
-                        const sliderMissProb = 0.30 + missBonus;
+                        const sliderMissProb = 0.20 + missBonus;
                         if (randVal < sliderMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'fork') {
                     // フォーク：低めに落ちるボール球で落差（変化量）に応じた空振り率上昇
                     if (arrivalPos.y < 0.55) {
-                        const forkMissProb = 0.35 + missBonus;
+                        const forkMissProb = 0.25 + missBonus;
                         if (randVal < forkMissProb) specialSwingAndMiss = true;
                     }
                 } else if (currentPitch === 'changeup') {
                     // チェンジアップ：低め・緩急ボール球で空振り率上昇
                     if (arrivalPos.y < 0.60) {
-                        const changeupMissProb = 0.30 + missBonus;
+                        const changeupMissProb = 0.20 + missBonus;
                         if (randVal < changeupMissProb) specialSwingAndMiss = true;
                     }
                 } else {
-                    // その他の変化球
-                    if (randVal < 0.15 + missBonus * 0.6) {
+                    // その他の変化球（カットボール・シュート等：空振り率を抑えめ（約5%〜10%）に調整）
+                    if (randVal < 0.05 + missBonus * 0.2) {
                         specialSwingAndMiss = true;
                     }
                 }
@@ -1272,15 +1276,18 @@
                 }
             }
 
-            // ストライクゾーン内でも変化量が非常に高い場合、空振りする可能性を加算
+            // ストライクゾーン内での空振り率計算
             let strikeMissProb = 0;
             if (isActualStrike) {
                 if (['straight', 'slider', 'fork', 'changeup'].includes(currentPitch)) {
                     if (dr > 0 || dc > 0) {
-                        strikeMissProb = (breakRatio * 0.30) + (speedRatio * 0.15);
+                        strikeMissProb = (breakRatio * 0.20) + (speedRatio * 0.10);
                     } else {
-                        strikeMissProb = (breakRatio >= 0.8) ? 0.20 : 0.05;
+                        strikeMissProb = (breakRatio >= 0.8) ? 0.15 : 0.05;
                     }
+                } else if (currentPitch === 'cutter' || currentPitch === 'shuuto') {
+                    // カット・シュートはストライクゾーン内で空振りしにくくし、打たせて取る（凡打増）挙動へ調整
+                    strikeMissProb = (breakRatio >= 0.8) ? 0.05 : 0.02;
                 }
             }
 
@@ -1344,8 +1351,8 @@
                     isSwingingAnim = true;
                     swingAnimProgress = 0;
 
-                    // 球速・変化量が上がると打ち取り率・ファウル/空振り率が大幅アップ
-                    const outChance = 0.35 + totalOutBonus * 0.8;
+                    // 球速・変化量が上がると打ち取り率・ファウル/空振り率がアップ
+                    const outChance = 0.30 + totalOutBonus * 0.6;
                     if (Math.random() < outChance) {
                         resultType = 'OUT';
                         resultText = '打ち取った！(アウト)';
