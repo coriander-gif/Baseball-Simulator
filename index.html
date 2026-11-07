@@ -88,64 +88,77 @@
 
         <!-- Header / View Controls -->
         <div class="flex justify-between items-start pointer-events-auto flex-wrap gap-2 flex-shrink-0">
-            <div class="ui-panel rounded-xl p-4">
-                <div class="flex justify-between items-start mb-2">
-                    <div>
-                        <h1 class="text-xl font-bold mb-2">Pitching Simulator</h1>
-                        <p class="text-sm text-gray-300">モード、利き腕、難易度を選択してください。</p>
-                    </div>
-                    <!-- 投球割合・平均球速・履歴削除ボタン -->
-                    <div class="flex flex-col gap-1.5 ml-4">
-                        <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
-                            投球割合
-                        </button>
-                        <button id="avg-speed-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
-                            平均球速
-                        </button>
-                        <button id="clear-history-btn" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28 mt-2">
-                            履歴削除
-                        </button>
-                    </div>
+            
+            <!-- 設定パネル（開閉可能） -->
+            <div class="ui-panel rounded-xl p-4 w-full sm:w-auto">
+                <!-- 開閉用ヘッダー -->
+                <div class="flex justify-between items-center cursor-pointer group select-none" id="settings-toggle-btn">
+                    <h1 class="text-xl font-bold flex items-center gap-2 group-hover:text-blue-400 transition-colors">
+                        Pitching Simulator
+                        <svg id="settings-chevron" class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                    </h1>
+                    <span class="text-xs text-gray-400 border border-gray-600 px-2 py-1 rounded bg-gray-800/50">開閉</span>
                 </div>
                 
-                <div class="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg mb-2 w-max flex-wrap gap-y-1">
-                    <button class="mode-btn bg-blue-600 text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="pitcher">投手モード</button>
-                    <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="catcher">捕手モード</button>
-                    <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="batter">打者モード</button>
-                    <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="umpire">審判モード</button>
-                </div>
-
-                <div class="flex gap-2 mb-2 flex-wrap">
-                    <!-- 利き腕設定 -->
-                    <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
-                        <span class="text-xs text-gray-400 font-bold px-1">利き腕:</span>
-                        <button class="arm-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-arm="right">右投げ</button>
-                        <button class="arm-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-arm="left">左投げ</button>
+                <!-- 折りたたみコンテンツ -->
+                <div id="settings-content" class="transition-all duration-300 overflow-hidden mt-2" style="max-height: 600px; opacity: 1;">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="text-sm text-gray-300 mb-2">モード、利き腕、難易度を選択してください。</p>
+                        </div>
+                        <!-- 投球割合・平均球速・履歴削除ボタン -->
+                        <div class="flex flex-col gap-1.5 ml-4">
+                            <button id="pitch-ratio-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
+                                投球割合
+                            </button>
+                            <button id="avg-speed-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28">
+                                平均球速
+                            </button>
+                            <button id="clear-history-btn" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors font-bold shadow-md flex items-center justify-center gap-1.5 w-28 mt-2">
+                                履歴削除
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg mb-2 w-max flex-wrap gap-y-1">
+                        <button class="mode-btn bg-blue-600 text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="pitcher">投手モード</button>
+                        <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="catcher">捕手モード</button>
+                        <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="batter">打者モード</button>
+                        <button class="mode-btn text-gray-300 hover:text-white px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors" data-mode="umpire">審判モード</button>
                     </div>
 
-                    <!-- 難易度設定 -->
-                    <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
-                        <span class="text-xs text-gray-400 font-bold px-1">難易度:</span>
-                        <button class="diff-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="easy">易しい</button>
-                        <button class="diff-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="normal">普通</button>
-                        <button class="diff-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="hard">難しい</button>
+                    <div class="flex gap-2 mb-2 flex-wrap">
+                        <!-- 利き腕設定 -->
+                        <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
+                            <span class="text-xs text-gray-400 font-bold px-1">利き腕:</span>
+                            <button class="arm-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-arm="right">右投げ</button>
+                            <button class="arm-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-arm="left">左投げ</button>
+                        </div>
+
+                        <!-- 難易度設定 -->
+                        <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
+                            <span class="text-xs text-gray-400 font-bold px-1">難易度:</span>
+                            <button class="diff-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="easy">易しい</button>
+                            <button class="diff-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="normal">普通</button>
+                            <button class="diff-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-diff="hard">難しい</button>
+                        </div>
+
+                        <!-- 判定テキスト ON/OFF スイッチ -->
+                        <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
+                            <span class="text-xs text-gray-400 font-bold px-1">判定表示:</span>
+                            <button id="result-text-toggle-btn" class="px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-blue-600 text-white font-bold">ON</button>
+                        </div>
                     </div>
 
-                    <!-- 判定テキスト ON/OFF スイッチ -->
-                    <div class="flex items-center space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg w-max">
-                        <span class="text-xs text-gray-400 font-bold px-1">判定表示:</span>
-                        <button id="result-text-toggle-btn" class="px-3 py-1 text-xs sm:text-sm rounded-md transition-colors bg-blue-600 text-white font-bold">ON</button>
+                    <!-- 視点切替ボタン -->
+                    <div class="flex items-center space-x-1 bg-gray-800 p-1 rounded-lg w-max flex-wrap gap-y-1">
+                        <span class="text-xs text-gray-400 font-bold px-1">視点:</span>
+                        <button class="cam-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="pitcher">投手</button>
+                        <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="tv">TV中継</button>
+                        <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="catcher">捕手</button>
+                        <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="batterRight">右打者</button>
+                        <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="batterLeft">左打者</button>
                     </div>
-                </div>
-
-                <!-- 視点切替ボタン -->
-                <div class="flex items-center space-x-1 bg-gray-800 p-1 rounded-lg w-max flex-wrap gap-y-1">
-                    <span class="text-xs text-gray-400 font-bold px-1">視点:</span>
-                    <button class="cam-btn active px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="pitcher">投手</button>
-                    <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="tv">TV中継</button>
-                    <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="catcher">捕手</button>
-                    <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="batterRight">右打者</button>
-                    <button class="cam-btn text-gray-300 px-2.5 py-1 text-xs sm:text-sm rounded-md transition-colors" data-view="batterLeft">左打者</button>
                 </div>
             </div>
 
@@ -467,6 +480,28 @@
                 });
             }
         }
+
+        // --- パネル開閉ロジックの追加 ---
+        const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+        const settingsContent = document.getElementById('settings-content');
+        const settingsChevron = document.getElementById('settings-chevron');
+        let isSettingsOpen = true;
+
+        settingsToggleBtn.addEventListener('click', () => {
+            isSettingsOpen = !isSettingsOpen;
+            if (isSettingsOpen) {
+                settingsContent.style.maxHeight = '600px';
+                settingsContent.style.opacity = '1';
+                settingsContent.style.marginTop = '0.5rem';
+                settingsChevron.classList.remove('rotate-180');
+            } else {
+                settingsContent.style.maxHeight = '0px';
+                settingsContent.style.opacity = '0';
+                settingsContent.style.marginTop = '0px';
+                settingsChevron.classList.add('rotate-180');
+            }
+        });
+        // -----------------------------
 
         function updateGameStatusDisplay() {
             for (let i = 1; i <= 3; i++) {
